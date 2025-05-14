@@ -4,6 +4,12 @@ import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { TbCalendarPlus } from "react-icons/tb";
 
+
+
+import TaskForm from "./createtask";
+import TaskPage from "./event";
+import SchedualPage from "./schedual";
+
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const categoryColors = {
@@ -14,6 +20,36 @@ const categoryColors = {
   Leaves: "bg-yellow-400",
   Other: "bg-orange-400",
 };
+const tabs = [
+  {
+    label: "Event",
+    key: "Event",
+    content: (
+      <div>
+        <TaskForm />
+      </div>
+    ),
+  },
+  {
+    label: "Task",
+    key: "Task",
+    content: (
+      <div>
+        <TaskPage />
+      </div>
+    ),
+  },
+  {
+    label: "Schedule Meeting",
+    key: "Schedule",
+    content: (
+      <div>
+        <SchedualPage />
+      </div>
+    ),
+  },
+];
+
 
 const eventDates = {
   "2025-05-01": ["Daily Task"],
@@ -26,6 +62,8 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [todayKey, setTodayKey] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("Task");
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -73,14 +111,14 @@ export default function CalendarPage() {
             className="px-5 py-2 rounded-lg border border-[#877575] bg-white text-black font-medium transition duration-200 ease-in-out hover:bg-gray-100 hover:shadow ml-auto"
           >
             Month
-          </button>
+         </button>
 
           {showDropdown && (
             <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow z-10 w-40">
               {[
-                { label: "Day", href: "/day-view" },
-                { label: "Month", href: "/month-view" },
-                { label: "Year", href: "/year-view" },
+                { label: "Day", href: "/daycalendar" },
+                { label: "Month", href: "/calendar" },
+                { label: "Year", href: "/yearcalendar" },
               ].map((item) => (
                 <Link key={item.label} href={item.href}>
                   <div className="px-4 py-2 hover:bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-700">
@@ -176,13 +214,65 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <Link href="/TaskForm">
-          <button className="flex items-center gap-2 bg-[#058CBF] text-white font-bold px-5 py-2 rounded-lg drop-shadow-lg hover:bg-[#0b7bab] transition">
-            <TbCalendarPlus className="h-5 w-5 text-black" />
-            CREATE
-          </button>
-        </Link>
+        {/* Create Button */}
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 bg-[#058CBF] text-white font-bold px-5 py-2 rounded-lg drop-shadow-lg hover:bg-[#0b7bab] transition"
+        >
+          <TbCalendarPlus className="h-5 w-5 text-black" />
+          CREATE
+        </button>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 relative">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-red-600"
+            >
+              &times;
+            </button>
+
+            {/* Tabs */}
+            {/* <div className="flex justify-around mb-4 border-b">
+              {["Task", "Event", "Schedule"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-2 px-4 font-medium ${
+                    activeTab === tab ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div> */}
+
+            {/* Tab Content */}
+            {/* Tabs */}
+            <div className="flex justify-around mb-4 shadow-md">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`py-2 px-4 font-medium ${activeTab === tab.key ? "border-b-4 border-[#018ABE] " : "text-black-500"
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="space-y-3">
+              {tabs.find((tab) => tab.key === activeTab)?.content}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
