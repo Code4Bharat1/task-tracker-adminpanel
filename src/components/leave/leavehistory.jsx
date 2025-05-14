@@ -1,10 +1,11 @@
-'use client';
-import React, { useEffect, useRef } from 'react';
+"use client";
+import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { useRouter } from "next/navigation";
 
 export default function LeaveTable() {
   const underlineRef = useRef(null);
-
+  const router = useRouter();
   useEffect(() => {
     gsap.fromTo(
       underlineRef.current,
@@ -15,45 +16,65 @@ export default function LeaveTable() {
 
   return (
     <div className="max-w-6xl mt-10 px-4">
-  {/* Heading */}
-  <h2 className="text-2xl font-bold mb-1 relative inline-block text-gray-800">
-    <span
-      ref={underlineRef}
-      className="absolute left-0 bottom-0 h-[2px] bg-red-500 w-full"
-    ></span>
-    Leave Requ
-  </h2>
-  <span className="text-2xl font-bold text-gray-800">est</span>
+      {/* Heading */}
+      <h2 className="text-2xl font-bold mb-1 relative inline-block text-gray-800">
+        <span
+          ref={underlineRef}
+          className="absolute left-0 bottom-0 h-[2px] bg-red-500 w-full"
+        ></span>
+        Leave History
+      </h2>
 
+      <div className="flex justify-end -mt-5  gap-2 mb-10">
+        <button
+          onClick={() => router.push("/leaverequest")}
+          className="bg-[#018ABE] text-white px-3 py-1 rounded-lg mr-10 cursor-pointer"
+        >
+          Leave Request
+        </button>
+        <label
+          htmlFor="status"
+          className="mr-3 text-black font-medium font-poppins text-lg"
+        >
+          Status:
+        </label>
 
-{/* Status Dropdown */}
-<div className="flex justify-end -mt-5 mb-10">
-<label htmlFor="status" className="mr-3 text-black font-medium font-poppins text-lg">Status:</label>
-
-<select
-  id="status"
-  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-[1px_1px_10px_lightgray] font-poppins"
->
-  <option value="pending">Pending</option>
-  <option value="approved">Approved</option>
-  <option value="rejected">Rejected</option>
-</select>
-
-</div>
+        <select
+          id="status"
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-[1px_1px_10px_lightgray] font-poppins"
+        >
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
 
       {/* Table */}
       <div className="overflow-x-auto -mt-4 rounded-2xl shadow-lg -ml-1 mr-auto">
-
         <table className="min-w-full border-collapse table-auto text-sm">
           <thead>
             <tr className="bg-[#018ABE] text-white">
-              <th className="px-4 py-2 border border-gray-100 w-[5%] text-center ">sr no.</th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">Name</th>
-              <th className="px-4 py-2 border border-gray-100 w-[20%] text-center ">Reason for Leave</th>
-              <th className="px-4 py-2  border border-gray-100 w-[10%] text-center ">Apply Date</th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">From Date</th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">To Date</th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%]  text-center ">Total Days</th>
+              <th className="px-4 py-2 border border-gray-100 w-[5%] text-center ">
+                sr no.
+              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
+                Name
+              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[20%] text-center ">
+                Reason for Leave
+              </th>
+              <th className="px-4 py-2  border border-gray-100 w-[10%] text-center ">
+                Apply Date
+              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
+                From Date
+              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
+                To Date
+              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%]  text-center ">
+                Total Days
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -86,9 +107,8 @@ export default function LeaveTable() {
                 days: "13",
               },
             ].map((entry) => (
-                <tr key={entry.sr} className="">
+              <tr key={entry.sr} className="">
                 <td className="px-4 py-2 font-medium text-center relative">
-                  
                   {entry.sr}.
                 </td>
                 <td className="px-4 py-2 font-medium text-center relative">
@@ -116,7 +136,6 @@ export default function LeaveTable() {
                   {entry.days}
                 </td>
               </tr>
-              
             ))}
           </tbody>
         </table>
