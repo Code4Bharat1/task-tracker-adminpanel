@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { FaSort, FaCheckSquare, FaTimesCircle } from 'react-icons/fa';
+import { BsThreeDotsVertical } from 'react-icons/bs';
+import { useRouter } from 'next/navigation';
 
 const expenses = [
   {
@@ -55,6 +57,7 @@ const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
 
 const ExpenseRequest = () => {
   const [activeStatus, setActiveStatus] = useState('All');
+  const router = useRouter();
 
   const filteredExpenses =
     activeStatus === 'All'
@@ -109,6 +112,7 @@ const ExpenseRequest = () => {
               </th>
               <th className="px-4 py-2 border-r border-white">Status</th>
               <th className="px-4 py-2">Take Action</th>
+              <th className="px-4 py-2">More</th>
             </tr>
           </thead>
           <tbody className="text-gray-800">
@@ -137,11 +141,24 @@ const ExpenseRequest = () => {
                     <FaTimesCircle className="mr-1" /> Reject
                   </button>
                 </td>
+                <td className="px-4 py-2 relative">
+                  <div className="group inline-block relative">
+                    <BsThreeDotsVertical className="text-xl cursor-pointer" />
+                    <div className="absolute right-0 mt-1 w-24 bg-white border border-gray-300 shadow-lg rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <button
+                        onClick={() => router.push(`/expense-details/${expense.id}`)}
+                        className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                      >
+                        View
+                      </button>
+                    </div>
+                  </div>
+                </td>
               </tr>
             ))}
             {filteredExpenses.length === 0 && (
               <tr>
-                <td colSpan="7" className="text-center py-4 text-gray-500">
+                <td colSpan="8" className="text-center py-4 text-gray-500">
                   No records found for "{activeStatus}".
                 </td>
               </tr>
