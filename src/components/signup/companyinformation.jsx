@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from 'axios';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -24,6 +25,7 @@ const RegistrationForm = () => {
         expectedStartDate: "",
         expectedUsers: "",
         planPhoneNumber: "",
+        termsAccepted: true, // Added terms acceptance field
     });
 
     const router = useRouter();
@@ -35,18 +37,19 @@ const RegistrationForm = () => {
 
     // Indian states array
     const indianStates = [
-        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
-        "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", 
-        "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
-        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
-        "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
-        "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", 
+        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+        "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+        "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+        "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+        "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
         "Ladakh", "Lakshadweep", "Puducherry"
     ];
 
     const [index, setIndex] = useState(0);
     const [animate, setAnimate] = useState(true);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -59,7 +62,25 @@ const RegistrationForm = () => {
 
         return () => clearInterval(interval);
     }, []);
-    
+
+    const registerCompany = async (formattedData) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_BACKEND_API}/compnayRegister/register`,
+                formattedData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Company registration failed:", error.response?.data || error.message);
+            throw error;
+        }
+    };
+
     const [step, setStep] = useState(1);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -87,9 +108,12 @@ const RegistrationForm = () => {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        
+        const { name, value, type, checked } = e.target;
+        setFormData((prev) => ({ 
+            ...prev, 
+            [name]: type === 'checkbox' ? checked : value 
+        }));
+
         // Clear specific error when field is being edited
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: null }));
@@ -98,27 +122,27 @@ const RegistrationForm = () => {
 
     const validateStep1 = () => {
         const newErrors = {};
-        
+
         if (!formData.companyName.trim()) {
             newErrors.companyName = "Company name is required";
         }
-        
+
         if (!formData.companyEmail.trim()) {
             newErrors.companyEmail = "Company email is required";
         } else if (!validateEmail(formData.companyEmail)) {
             newErrors.companyEmail = "Please enter a valid email address";
         }
-        
+
         if (!formData.phoneNumber.trim()) {
             newErrors.phoneNumber = "Phone number is required";
         } else if (!validateIndianPhone(formData.phoneNumber)) {
             newErrors.phoneNumber = "Please enter a valid 10-digit Indian phone number";
         }
-        
+
         if (!formData.country) {
             newErrors.country = "Country is required";
         }
-        
+
         if (!formData.state) {
             newErrors.state = "State is required";
         }
@@ -126,86 +150,90 @@ const RegistrationForm = () => {
         if (formData.websiteUrl && !validateURL(formData.websiteUrl)) {
             newErrors.websiteUrl = "Please enter a valid URL";
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const validateStep2 = () => {
         const newErrors = {};
-        
+
         if (!formData.firstName.trim()) {
             newErrors.firstName = "Full name is required";
         }
-        
+
         if (!formData.email.trim()) {
             newErrors.email = "Email is required";
         } else if (!validateEmail(formData.email)) {
             newErrors.email = "Please enter a valid email address";
         }
-        
+
         if (!formData.designation.trim()) {
             newErrors.designation = "Designation is required";
         }
-        
+
         if (!formData.phone.trim()) {
             newErrors.phone = "Phone number is required";
         } else if (!validateIndianPhone(formData.phone)) {
             newErrors.phone = "Please enter a valid 10-digit Indian phone number";
         }
-        
+
         if (!formData.password) {
             newErrors.password = "Password is required";
         } else if (!validatePassword(formData.password)) {
             newErrors.password = "Password must be at least 8 characters with uppercase, lowercase, number, and special character";
         }
-        
+
         if (!formData.confirmPassword) {
             newErrors.confirmPassword = "Please confirm your password";
         } else if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = "Passwords do not match";
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const validateStep3 = () => {
         const newErrors = {};
-        
+
         if (!formData.desiredPlan) {
             newErrors.desiredPlan = "Please select a plan";
         }
-        
+
         if (!formData.expectedStartDate) {
             newErrors.expectedStartDate = "Expected start date is required";
         }
-        
+
         if (!formData.expectedUsers) {
             newErrors.expectedUsers = "Number of expected users is required";
         } else if (formData.expectedUsers <= 0) {
             newErrors.expectedUsers = "Number of users must be greater than 0";
         }
-        
+
         if (!formData.planPhoneNumber.trim()) {
             newErrors.planPhoneNumber = "Phone number is required";
         } else if (!validateIndianPhone(formData.planPhoneNumber)) {
             newErrors.planPhoneNumber = "Please enter a valid 10-digit Indian phone number";
         }
-        
+
+        if (!formData.termsAccepted) {
+            newErrors.termsAccepted = "You must accept the terms and conditions";
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleNextPage = () => {
         let isValid = false;
-        
+
         if (step === 1) {
             isValid = validateStep1();
         } else if (step === 2) {
             isValid = validateStep2();
         }
-        
+
         if (isValid) {
             setStep(step + 1);
             // Scroll to top when changing steps
@@ -224,20 +252,60 @@ const RegistrationForm = () => {
         }
     };
 
-    const handleSubmit = () => {
-        const isValid = validateStep3();
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // prevent page reload
         
+        const isValid = validateStep3();
+
         if (isValid) {
-            toast.success("Registration completed successfully! Redirecting to dashboard...");
-            console.log("Form submitted:", formData);
+            setIsSubmitting(true);
             
-            // Simulate redirect after short delay
-            setTimeout(() => {
-                // router.push('/dashboard'); // Uncomment when route is ready
-                console.log("Redirecting to dashboard...");
-            }, 3000);
+            // Format data according to backend controller structure
+            const formattedData = {
+                companyInfo: {
+                    companyName: formData.companyName,
+                    websiteUrl: formData.websiteUrl,
+                    companyEmail: formData.companyEmail,
+                    phoneNumber: formData.phoneNumber,
+                    country: formData.country,
+                    state: formData.state,
+                },
+                adminInfo: {
+                    fullName: formData.firstName,
+                    officialEmail: formData.email,
+                    designation: formData.designation,
+                    phoneNumber: formData.phone,
+                    password: formData.password,
+                },
+                planPreferences: {
+                    desiredPlan: formData.desiredPlan,
+                    expectedStartDate: formData.expectedStartDate,
+                    expectedUsers: formData.expectedUsers,
+                    supportPhoneNumber: formData.planPhoneNumber,
+                },
+                termsAccepted: formData.termsAccepted,
+                status: "Pending"
+            };
+
+            try {
+                const result = await registerCompany(formattedData);
+                toast.success("Registration completed successfully! Redirecting to dashboard...");
+                console.log("✅ Success:", result);
+                
+                // Redirect after short delay
+                setTimeout(() => {
+                    // router.push('/dashboard'); // Uncomment when route is ready
+                }, 3000);
+            } catch (err) {
+                console.error("❌ Error submitting form", err);
+                const errorMessage = err.response?.data?.message || "Registration failed. Please try again.";
+                toast.error(errorMessage);
+            } finally {
+                setIsSubmitting(false);
+            }
         } else {
             toast.error("Please fix the errors before submitting.");
+            console.log("Errors:", errors);
         }
     };
 
@@ -245,7 +313,7 @@ const RegistrationForm = () => {
         <div className="flex flex-row h-screen">
             {/* Toast Container */}
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-            
+
             {/* Left Side */}
             <div
                 className="w-2/5 h-full bg-cover bg-center relative flex items-center justify-center"
@@ -267,10 +335,10 @@ const RegistrationForm = () => {
             {/* Right Section */}
             <div className="flex flex-col items-center justify-center min-h-screen bg-white px-4 w-full md:w-3/5 relative overflow-y-auto">
                 {/* Decorative Vectors */}
-                
+
                 <div className="w-full max-w-xl z-10 py-8">
                     <h2 className="text-3xl font-bold text-black mb-6 text-center">Company Registration</h2>
-                    
+
                     {/* Progress Bar */}
                     <div className="w-full mb-8">
                         <div className="flex justify-between mb-2">
@@ -291,11 +359,11 @@ const RegistrationForm = () => {
                                 <form className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Company Name <span className="text-red-500">*</span></label>
-                                        <input 
-                                            name="companyName" 
-                                            value={formData.companyName} 
-                                            onChange={handleChange} 
-                                            className={`w-full p-3 rounded-xl border ${errors.companyName ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`} 
+                                        <input
+                                            name="companyName"
+                                            value={formData.companyName}
+                                            onChange={handleChange}
+                                            className={`w-full p-3 rounded-xl border ${errors.companyName ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="Enter company name"
                                         />
                                         {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
@@ -303,11 +371,11 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Website URL (Optional)</label>
-                                        <input 
-                                            name="websiteUrl" 
-                                            value={formData.websiteUrl} 
-                                            onChange={handleChange} 
-                                            className={`w-full p-3 rounded-xl border ${errors.websiteUrl ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`} 
+                                        <input
+                                            name="websiteUrl"
+                                            value={formData.websiteUrl}
+                                            onChange={handleChange}
+                                            className={`w-full p-3 rounded-xl border ${errors.websiteUrl ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="https://example.com"
                                         />
                                         {errors.websiteUrl && <p className="text-red-500 text-sm mt-1">{errors.websiteUrl}</p>}
@@ -315,12 +383,12 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Company Email <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="email" 
-                                            name="companyEmail" 
-                                            value={formData.companyEmail} 
-                                            onChange={handleChange} 
-                                            className={`w-full p-3 rounded-xl border ${errors.companyEmail ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`} 
+                                        <input
+                                            type="email"
+                                            name="companyEmail"
+                                            value={formData.companyEmail}
+                                            onChange={handleChange}
+                                            className={`w-full p-3 rounded-xl border ${errors.companyEmail ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="company@example.com"
                                         />
                                         {errors.companyEmail && <p className="text-red-500 text-sm mt-1">{errors.companyEmail}</p>}
@@ -330,12 +398,12 @@ const RegistrationForm = () => {
                                         <label className="block mb-1 font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
                                         <div className="flex items-center">
                                             <span className="bg-gray-100 p-3 rounded-l-xl border border-r-0 border-gray-300">+91</span>
-                                            <input 
-                                                type="tel" 
-                                                name="phoneNumber" 
-                                                value={formData.phoneNumber} 
-                                                onChange={handleChange} 
-                                                className={`w-full p-3 rounded-r-xl border ${errors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`} 
+                                            <input
+                                                type="tel"
+                                                name="phoneNumber"
+                                                value={formData.phoneNumber}
+                                                onChange={handleChange}
+                                                className={`w-full p-3 rounded-r-xl border ${errors.phoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                                 placeholder="10-digit number"
                                                 maxLength="10"
                                             />
@@ -345,9 +413,9 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Country <span className="text-red-500">*</span></label>
-                                        <select 
-                                            name="country" 
-                                            value={formData.country} 
+                                        <select
+                                            name="country"
+                                            value={formData.country}
                                             onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.country ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             disabled
@@ -359,9 +427,9 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">State <span className="text-red-500">*</span></label>
-                                        <select 
-                                            name="state" 
-                                            value={formData.state} 
+                                        <select
+                                            name="state"
+                                            value={formData.state}
                                             onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.state ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                         >
@@ -383,10 +451,10 @@ const RegistrationForm = () => {
                                 <form className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Full Name <span className="text-red-500">*</span></label>
-                                        <input 
-                                            name="firstName" 
-                                            value={formData.firstName} 
-                                            onChange={handleChange} 
+                                        <input
+                                            name="firstName"
+                                            value={formData.firstName}
+                                            onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.firstName ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="Enter your full name"
                                         />
@@ -395,11 +463,11 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Official Email <span className="text-red-500">*</span></label>
-                                        <input 
+                                        <input
                                             type="email"
-                                            name="email" 
-                                            value={formData.email} 
-                                            onChange={handleChange} 
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="name@company.com"
                                         />
@@ -408,10 +476,10 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Designation <span className="text-red-500">*</span></label>
-                                        <input 
-                                            name="designation" 
-                                            value={formData.designation} 
-                                            onChange={handleChange} 
+                                        <input
+                                            name="designation"
+                                            value={formData.designation}
+                                            onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.designation ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="e.g. CEO, Manager, Director"
                                         />
@@ -422,11 +490,11 @@ const RegistrationForm = () => {
                                         <label className="block mb-1 font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
                                         <div className="flex items-center">
                                             <span className="bg-gray-100 p-3 rounded-l-xl border border-r-0 border-gray-300">+91</span>
-                                            <input 
+                                            <input
                                                 type="tel"
-                                                name="phone" 
-                                                value={formData.phone} 
-                                                onChange={handleChange} 
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={handleChange}
                                                 className={`w-full p-3 rounded-r-xl border ${errors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                                 placeholder="10-digit number"
                                                 maxLength="10"
@@ -486,10 +554,10 @@ const RegistrationForm = () => {
                                 <form className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Desired Plan <span className="text-red-500">*</span></label>
-                                        <select 
-                                            name="desiredPlan" 
-                                            value={formData.desiredPlan} 
-                                            onChange={handleChange} 
+                                        <select
+                                            name="desiredPlan"
+                                            value={formData.desiredPlan}
+                                            onChange={handleChange}
                                             className={`w-full p-3 rounded-xl border ${errors.desiredPlan ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                         >
                                             <option value="">Select Plan</option>
@@ -502,11 +570,11 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Expected Start Date <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="date" 
-                                            name="expectedStartDate" 
-                                            value={formData.expectedStartDate} 
-                                            onChange={handleChange} 
+                                        <input
+                                            type="date"
+                                            name="expectedStartDate"
+                                            value={formData.expectedStartDate}
+                                            onChange={handleChange}
                                             min={new Date().toISOString().split('T')[0]}
                                             className={`w-full p-3 rounded-xl border ${errors.expectedStartDate ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                         />
@@ -515,11 +583,11 @@ const RegistrationForm = () => {
 
                                     <div>
                                         <label className="block mb-1 font-medium text-gray-700">Number of Expected Users <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="number" 
-                                            name="expectedUsers" 
-                                            value={formData.expectedUsers} 
-                                            onChange={handleChange} 
+                                        <input
+                                            type="number"
+                                            name="expectedUsers"
+                                            value={formData.expectedUsers}
+                                            onChange={handleChange}
                                             min="1"
                                             className={`w-full p-3 rounded-xl border ${errors.expectedUsers ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="Enter number of users"
@@ -531,11 +599,11 @@ const RegistrationForm = () => {
                                         <label className="block mb-1 font-medium text-gray-700">Support Phone Number <span className="text-red-500">*</span></label>
                                         <div className="flex items-center">
                                             <span className="bg-gray-100 p-3 rounded-l-xl border border-r-0 border-gray-300">+91</span>
-                                            <input 
-                                                type="tel" 
-                                                name="planPhoneNumber" 
-                                                value={formData.planPhoneNumber} 
-                                                onChange={handleChange} 
+                                            <input
+                                                type="tel"
+                                                name="planPhoneNumber"
+                                                value={formData.planPhoneNumber}
+                                                onChange={handleChange}
                                                 className={`w-full p-3 rounded-r-xl border ${errors.planPhoneNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                                 placeholder="10-digit number"
                                                 maxLength="10"
