@@ -27,7 +27,7 @@ const menuItems = [
   { label: "Document", icon: FileCheck, href: "/document" },
   { label: "Leave", icon: MailCheck, href: "/leavetable" },
   { label: "Salary", icon: Coins, href: "/salary" },
-  { label: "Expense", icon: Receipt, href: "/expense" },
+  { label: "Expense", icon: Receipt, href: "/expenseRequest" },
   { label: "Performance Board", icon: TrendingUp, href: "/performanceboard" },
   { label: "Company Policies", icon: ShieldCheck, href: "/companypolicy" },
   { label: "Logout", icon: LogOut, href: "/" },
