@@ -30,8 +30,8 @@ export default function AddDocument() {
         <span className="border-b-4 border-red-500 pb-1 ml-8">Add Document</span>
       </h1>
 
-      <div className="bg-white rounded-xl shadow p-8 max-w-3xl ml-8">
-  <div className="grid grid-cols-2 gap-8 mb-8">
+      <div className="bg-white rounded-xl shadow p-8 md:mx-10 border border-black justify-center items-center">
+  <div className="grid grid-cols-2 gap-8 mb-8 ">
 
         <div>
   <label className="block font-medium mb-2">First Name :</label>
