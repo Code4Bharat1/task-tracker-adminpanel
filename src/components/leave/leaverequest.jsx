@@ -1,19 +1,34 @@
 "use client";
-import React from "react";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import React, { useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 export default function LeaveRequest() {
   const handleApprove = () => toast.success("Leave Approved");
   const handleReject = () => toast.error("Leave Rejected");
+  const underlineRef = useRef(null);
 
+  useGSAP(() => {
+    gsap.fromTo(
+      underlineRef.current,
+      { width: "0%" },
+      { width: "100%", duration: 1, ease: "power2.out" }
+    );
+  }, []);
   return (
     <div className="flex justify-center items-start mt-10">
       <div className="w-full max-w-3xl px-4">
         {/* Heading */}
-        <h1 className="text-2xl font-bold mb-6 border-b-2 border-red-500 w-fit">
+        <h2 className="text-2xl font-bold mb-6 relative inline-block text-gray-800">
+          <span
+            ref={underlineRef}
+            className="absolute left-0 bottom-0 h-[2px] bg-[#018ABE] w-full"
+          ></span>
           Leave Request
-        </h1>
+        </h2>
 
         {/* White Box */}
         <div className="bg-white rounded-lg shadow p-8 border border-gray-300 w-full">
@@ -29,39 +44,49 @@ export default function LeaveRequest() {
             {/* Employee Info */}
             <div>
               <p className="font-semibold text-lg">Emp Information :</p>
-              <div className="ml-2 space-y-2 mt-4 text-sm sm:text-base">
-                <p>
-                  Emp Regn. No. <span className="ml-2">25306</span>
-                  <span className="ml-12">DOJ : 01/01/2025</span>
-                </p>
-                <p>
-                  Emp Name <span className="ml-6">Prashant P</span>
-                  <span className="ml-12">Department : IT Service</span>
-                </p>
-                <p>
-                  Designation <span className="ml-3">Graphic Designer</span>
-                </p>
+
+              <div className="ml-2 mt-4 text-sm sm:text-base space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                  <p className="font-medium">Emp Regn. No.</p>
+                  <p>25306</p>
+                  <p className="font-medium">DOJ</p>
+                  <p>01/01/2025</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                  <p className="font-medium">Emp Name</p>
+                  <p>Prashant P</p>
+                  <p className="font-medium">Department</p>
+                  <p>IT Service</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                  <p className="font-medium">Designation</p>
+                  <p>Graphic Designer</p>
+                </div>
               </div>
             </div>
 
             {/* Leave Period Table */}
             <div>
-              <h2 className="text-lg font-bold underline mb-2">Leave Period</h2>
+              <h2 className="text-lg font-bold  mb-2">Leave Period</h2>
               <div className="rounded-lg overflow-hidden">
                 <table className="w-full text-center border-collapse">
                   <thead>
-                    <tr className="bg-cyan-700 text-black">
-                      <th className="py-2 px-4 border-r border-black">From</th>
-                      <th className="py-2 px-4 border-r border-black">To</th>
-                      <th className="py-2 px-4">Type of Leave</th>
+                    <tr className="bg-[#018ABE] text-white">
+                      <th className="py-2 px-4 border-r border-gray-600">
+                        FROM
+                      </th>
+                      <th className="py-2 px-4 border-r border-gray-600">TO</th>
+                      <th className="py-2 px-4">REASON</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-blue-100">
-                      <td className="py-2 px-4 border-r border-black">
+                    <tr className="bg-[#ECF5F9]">
+                      <td className="py-2 px-4 border-r border-gray-600">
                         05/05/2025
                       </td>
-                      <td className="py-2 px-4 border-r border-black">
+                      <td className="py-2 px-4 border-r border-gray-600">
                         08/05/2025
                       </td>
                       <td className="py-2 px-4">Sick Leave</td>

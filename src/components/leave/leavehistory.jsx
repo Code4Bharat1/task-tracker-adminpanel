@@ -1,12 +1,14 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { useRouter } from "next/navigation";
+import { useGSAP } from "@gsap/react";
 
 export default function LeaveTable() {
   const underlineRef = useRef(null);
   const router = useRouter();
-  useEffect(() => {
+
+  useGSAP(() => {
     gsap.fromTo(
       underlineRef.current,
       { width: "0%" },
@@ -15,23 +17,17 @@ export default function LeaveTable() {
   }, []);
 
   return (
-    <div className="max-w-6xl mt-10 px-4">
+    <div className="max-w-6xl mt-10 px-4 mx-auto">
       {/* Heading */}
       <h2 className="text-2xl font-bold mb-1 relative inline-block text-gray-800">
         <span
           ref={underlineRef}
-          className="absolute left-0 bottom-0 h-[2px] bg-red-500 w-full"
+          className="absolute left-0 bottom-0 h-[2px] bg-[#018ABE] w-full"
         ></span>
         Leave History
       </h2>
 
-      <div className="flex justify-end -mt-5  gap-2 mb-10">
-        <button
-          onClick={() => router.push("/leaverequest")}
-          className="bg-[#018ABE] text-white px-3 py-1 rounded-lg mr-10 cursor-pointer"
-        >
-          Leave Request
-        </button>
+      <div className="flex justify-end -mt-5 gap-2 mb-10">
         <label
           htmlFor="status"
           className="mr-3 text-black font-medium font-poppins text-lg"
@@ -50,30 +46,33 @@ export default function LeaveTable() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto -mt-4 rounded-2xl shadow-lg -ml-1 mr-auto">
+      <div className="overflow-x-auto -mt-4 rounded-2xl shadow-lg mx-auto">
         <table className="min-w-full border-collapse table-auto text-sm">
           <thead>
             <tr className="bg-[#018ABE] text-white">
-              <th className="px-4 py-2 border border-gray-100 w-[5%] text-center ">
-                sr no.
+              <th className="px-4 py-2 whitespace-nowrap border border-gray-100 w-[5%] text-center">
+                SR NO
               </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
-                Name
+              <th className="px-4  font-normal py-2 border border-gray-100 w-[10%] text-center">
+                NAME
               </th>
-              <th className="px-4 py-2 border border-gray-100 w-[20%] text-center ">
-                Reason for Leave
+              <th className="px-4 py-2 border border-gray-100 w-[20%] text-center">
+                LEAVE TYPE
               </th>
-              <th className="px-4 py-2  border border-gray-100 w-[10%] text-center ">
-                Apply Date
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
+                APPLY DATE
               </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
-                From Date
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
+                FROM DATE
               </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center ">
-                To Date
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
+                TO DATE
               </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%]  text-center ">
-                Total Days
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
+                TOTAL DAYS
+              </th>
+              <th className="px-4 py-2 border whitespace-nowrap border-gray-100 w-[10%] text-center">
+                VIEW REQUEST
               </th>
             </tr>
           </thead>
@@ -82,7 +81,7 @@ export default function LeaveTable() {
               {
                 sr: 1,
                 name: "Chinmay Gawade",
-                reason: "Cousin Marriage",
+                type: "Casual Leave",
                 apply: "30-04-2025",
                 from: "10-05-2025",
                 to: "01-04-2025",
@@ -91,7 +90,7 @@ export default function LeaveTable() {
               {
                 sr: 2,
                 name: "Harsh Singh",
-                reason: "Sick",
+                type: "Sick Leave",
                 apply: "28-03-2025",
                 from: "28-03-2025",
                 to: "01-04-2025",
@@ -100,14 +99,14 @@ export default function LeaveTable() {
               {
                 sr: 3,
                 name: "Tamim Tolkar",
-                reason: "Study Leave",
+                type: "Study Leave",
                 apply: "10-05-2025",
                 from: "11-05-2025",
                 to: "23-03-2025",
                 days: "13",
               },
             ].map((entry) => (
-              <tr key={entry.sr} className="">
+              <tr key={entry.sr}>
                 <td className="px-4 py-2 font-medium text-center relative">
                   {entry.sr}.
                 </td>
@@ -117,7 +116,7 @@ export default function LeaveTable() {
                 </td>
                 <td className="px-4 py-2 font-medium text-center relative">
                   <div className="custom-border-left"></div>
-                  {entry.reason}
+                  {entry.type}
                 </td>
                 <td className="px-4 py-2 font-medium text-center relative">
                   <div className="custom-border-left"></div>
@@ -127,13 +126,22 @@ export default function LeaveTable() {
                   <div className="custom-border-left"></div>
                   {entry.from}
                 </td>
-                <td className="px-4 py-2 font-medium text-center  relative">
+                <td className="px-4 py-2 font-medium text-center relative">
                   <div className="custom-border-left"></div>
                   {entry.to}
                 </td>
                 <td className="px-4 py-2 font-medium text-center relative">
                   <div className="custom-border-left"></div>
                   {entry.days}
+                </td>
+                <td className="px-4 py-2 font-medium text-center relative">
+                  <div className="custom-border-left"></div>
+                  <button
+                    onClick={() => router.push("/leaverequest")}
+                    className="text-[#018ABE] underline hover:text-blue-800 transition"
+                  >
+                    View
+                  </button>
                 </td>
               </tr>
             ))}
