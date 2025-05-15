@@ -24,7 +24,7 @@ export default function Forgotpassword() {
 
             if (res.status === 200) {
                 toast.success('OTP sent successfully!');
-                router.push('/resendotp');
+                router.push('/forgetpassword/verifyotp');
             } else {
                 toast.error('Failed to send OTP. Please try again.');
             }
@@ -51,7 +51,7 @@ export default function Forgotpassword() {
 
             if (res.status === 200) {
                 toast.success('OTP resent successfully!').setTimeout(() => { }, 2000);
-                router.push('/verifyotp');
+                router.push('/forgetpassword/verifyotp');
                 setIsResendDisabled(true);
                 setTimer(60);
 

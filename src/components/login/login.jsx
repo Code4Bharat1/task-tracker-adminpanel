@@ -209,7 +209,7 @@ export default function Loginpage() {
   </span>
 </div>
 
-                <Link href="/forgotpassword" className="text-base text-right block mt-4 text-[rgba(62,144,151,1)] hover:underline">
+                <Link href="/forgetpassword" className="text-base text-right block mt-4 text-[rgba(62,144,151,1)] hover:underline">
   Forget Password?
 </Link>
 
