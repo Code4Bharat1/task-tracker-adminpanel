@@ -19,8 +19,6 @@ const RegistrationForm = () => {
         email: "",
         designation: "",
         phone: "",
-        password: "",
-        confirmPassword: "",
         desiredPlan: "",
         expectedStartDate: "",
         expectedUsers: "",
@@ -95,11 +93,6 @@ const RegistrationForm = () => {
         return re.test(phone);
     };
 
-    const validatePassword = (password) => {
-        // At least 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
-        const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        return re.test(password);
-    };
 
     const validateURL = (url) => {
         if (!url) return true; // Optional field
@@ -176,18 +169,6 @@ const RegistrationForm = () => {
             newErrors.phone = "Phone number is required";
         } else if (!validateIndianPhone(formData.phone)) {
             newErrors.phone = "Please enter a valid 10-digit Indian phone number";
-        }
-
-        if (!formData.password) {
-            newErrors.password = "Password is required";
-        } else if (!validatePassword(formData.password)) {
-            newErrors.password = "Password must be at least 8 characters with uppercase, lowercase, number, and special character";
-        }
-
-        if (!formData.confirmPassword) {
-            newErrors.confirmPassword = "Please confirm your password";
-        } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = "Passwords do not match";
         }
 
         setErrors(newErrors);
@@ -275,7 +256,6 @@ const RegistrationForm = () => {
                     officialEmail: formData.email,
                     designation: formData.designation,
                     phoneNumber: formData.phone,
-                    password: formData.password,
                 },
                 planPreferences: {
                     desiredPlan: formData.desiredPlan,
@@ -501,47 +481,6 @@ const RegistrationForm = () => {
                                             />
                                         </div>
                                         {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                                    </div>
-
-                                    <div>
-                                        <label className="block mb-1 font-medium text-gray-700">Create Password <span className="text-red-500">*</span></label>
-                                        <div className="relative">
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                name="password"
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                                className={`w-full p-3 rounded-xl border ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                                                placeholder="Min. 8 characters"
-                                            />
-                                            <span onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3 cursor-pointer text-gray-500 hover:text-gray-700">
-                                                {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                            </span>
-                                        </div>
-                                        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-                                        {!errors.password && (
-                                            <p className="text-gray-500 text-xs mt-1">
-                                                Password must contain at least 8 characters, including uppercase, lowercase, number and special character
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block mb-1 font-medium text-gray-700">Confirm Password <span className="text-red-500">*</span></label>
-                                        <div className="relative">
-                                            <input
-                                                type={showConfirmPassword ? "text" : "password"}
-                                                name="confirmPassword"
-                                                value={formData.confirmPassword}
-                                                onChange={handleChange}
-                                                className={`w-full p-3 rounded-xl border ${errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                                                placeholder="Confirm your password"
-                                            />
-                                            <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-3 cursor-pointer text-gray-500 hover:text-gray-700">
-                                                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                                            </span>
-                                        </div>
-                                        {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
                                     </div>
                                 </form>
                             </>
