@@ -49,7 +49,7 @@ export default function PasswordResetForm() {
         }
 
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/verify-otp`, {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/verify-otp-admin`, {
                 email: email,
                 otp: otp,
                 newPassword: password,

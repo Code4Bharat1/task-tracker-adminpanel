@@ -66,7 +66,7 @@ const RegistrationForm = () => {
     const registerCompany = async (formattedData) => {
         try {
             const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_BACKEND_API}/compnayRegister/register`,
+                `${process.env.NEXT_PUBLIC_BACKEND_API}/companyRegister/register`,
                 formattedData,
                 {
                     headers: {

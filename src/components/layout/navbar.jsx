@@ -1,11 +1,13 @@
 'use client';
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { IoVideocamOutline } from "react-icons/io5";
 import { LuUserRoundPlus } from "react-icons/lu";
 import { FaRegBell, FaSearch, FaUser, FaSignOutAlt } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -13,29 +15,34 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [userData, setUserData] = useState({ fullName: "", email: "" });
+  const notifications = [];
 
   const router = useRouter();
 
-  // Simulated user data
-  const userData = {
-    firstName: "Paras",
-    email: "paras@example.com",
-  };
-
-  const notifications = [];
-
-  const toggleMeetingPopup = () => {
-    setShowMeetingPopup(!showMeetingPopup);
-  };
-
-  const handleProfileAction = () => {
-    setShowProfileMenu(false);
-  };
+  const toggleMeetingPopup = () => setShowMeetingPopup(!showMeetingPopup);
 
   const handleLogout = () => {
-    // Add logout logic
-    console.log("Logged out");
+    toast.success("Logged out");
+    // Add your logout logic here if needed
+    router.push("/");
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/profile/getProfileAdmin`,
+          { withCredentials: true }
+        );
+        setUserData(response.data);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        toast.error("Failed to fetch user data.");
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="w-full px-8 py-4 flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-[#018ABE] via-[#65B7D4] to-[#E0E2E3] gap-4 sm:gap-0 relative">
@@ -49,22 +56,20 @@ export default function Navbar() {
         />
       </div>
 
-      {/* Right Icons */}
-      <div className="flex items-center gap-x-10 flex-wrap justify-center sm:justify-end relative">
-        {/* Add Team Member */}
+      {/* Icons */}
+      <div className="flex items-center gap-x-10 relative">
         <Link href="/addteammember">
           <LuUserRoundPlus className="w-6 h-7 text-black cursor-pointer" />
         </Link>
 
-        {/* Video Call */}
-        <button onClick={toggleMeetingPopup}>
-          <IoVideocamOutline className="w-7 h-8 text-black cursor-pointer" />
-        </button>
+        <IoVideocamOutline
+          className="w-7 h-8 text-black cursor-pointer"
+          onClick={toggleMeetingPopup}
+        />
 
-        {/* Notification Bell */}
         <div className="relative">
           <FaRegBell
-            className="cursor-pointer text-black w-7 h-7"
+            className="w-7 h-7 text-black cursor-pointer"
             onClick={() => setShowNotifications(!showNotifications)}
           />
           {showNotifications && (
@@ -90,60 +95,47 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Profile Image */}
         <div className="relative">
           <Image
-            src="/layout/profile.png"
+            src="/profile.png"
             alt="Profile"
             width={40}
             height={40}
             className="object-contain cursor-pointer rounded-full"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           />
-
-          {/* Profile Menu */}
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-30">
-              <div className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden">
-                    <Image
-                      src="/layout/profile.png"
-                      width={500}
-                      height={500}
-                      alt="Profile picture"
-                      style={{ objectFit: "cover" }}
-                    />
+              <div className="p-4 flex items-center gap-3">
+                <Image
+                  src="/profile.png"
+                  width={48}
+                  height={48}
+                  alt="Profile picture"
+                  className="rounded-full"
+                />
+                <div>
+                  <div className="font-semibold">
+                    {userData.fullName || "Admin"}
                   </div>
-                  <div>
-                    <div className="font-semibold">{userData.firstName || 'Guest'}</div>
-                    <div className="text-sm text-gray-500">{userData.email}</div>
-                  </div>
+                  <div className="text-sm text-gray-500">{userData.email}</div>
                 </div>
               </div>
-
               <div className="py-2">
                 <Link href="/profile">
-                  <div
-                    onClick={handleProfileAction}
-                    className="w-full px-4 py-2 text-left flex items-center space-x-3 hover:bg-gray-100 cursor-pointer"
-                  >
+                  <div className="px-4 py-2 flex items-center gap-3 hover:bg-gray-100 cursor-pointer">
                     <FaUser className="text-gray-600" />
                     <span>View Profile</span>
                   </div>
                 </Link>
-
                 <div className="border-t my-1"></div>
-
-                <Link href="/">
-                  <div
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left flex items-center space-x-3 hover:bg-gray-100 text-red-500 cursor-pointer"
-                  >
-                    <FaSignOutAlt />
-                    <span>Logout</span>
-                  </div>
-                </Link>
+                <div
+                  onClick={handleLogout}
+                  className="px-4 py-2 flex items-center gap-3 hover:bg-gray-100 text-red-500 cursor-pointer"
+                >
+                  <FaSignOutAlt />
+                  <span>Logout</span>
+                </div>
               </div>
             </div>
           )}
@@ -153,17 +145,16 @@ export default function Navbar() {
       {/* Meeting Popup */}
       {showMeetingPopup && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/50 backdrop-blur-sm"
-          onClick={() => setShowMeetingPopup(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={toggleMeetingPopup}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-md text-center w-[90%] sm:w-[500px] relative"
+            className="bg-white p-6 rounded-lg shadow-md text-center w-[90%] sm:w-[500px]"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-2xl font-bold mb-4 border-b-2 border-black inline-block">
               SCHEDULE MEETING
             </h2>
-
             <form className="space-y-3 mt-2 text-left">
               <input
                 type="text"
@@ -180,13 +171,10 @@ export default function Navbar() {
                 <option value="">Select Team Members</option>
                 <option>Member 1</option>
                 <option>Member 2</option>
-                <option>Member 3</option>
               </select>
-
               <div className="flex flex-col sm:flex-row gap-4">
                 <input
                   type="date"
-                  required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
@@ -194,20 +182,16 @@ export default function Navbar() {
                 />
                 <input
                   type="time"
-                  required
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   className="w-full sm:w-1/2 p-2 border border-black rounded bg-white text-black"
                 />
               </div>
-
               <select required className="w-full p-2 border border-black rounded">
                 <option value="">Select Duration</option>
                 <option>30 minutes</option>
                 <option>1 hour</option>
-                <option>1.5 hours</option>
               </select>
-
               <div className="flex items-center gap-2">
                 <label className="text-gray-800">Link</label>
                 <input
@@ -217,22 +201,19 @@ export default function Navbar() {
                   className="flex-1 p-2 border border-black rounded"
                 />
               </div>
-
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     const input = document.getElementById("meetingLink");
-                    if (input && input.value) {
+                    if (input && input.value)
                       navigator.clipboard.writeText(input.value);
-                    }
                   }}
                   className="text-sm text-blue-600 underline"
                 >
                   Copy Link
                 </button>
               </div>
-
               <div className="flex justify-center mt-4">
                 <button
                   type="submit"
