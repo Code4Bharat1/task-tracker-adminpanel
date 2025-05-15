@@ -100,7 +100,7 @@ export default function Loginpage() {
         return;
       }
 
-      toast.success('Login successful!');
+      toast.success('Login successful!', 1000);
       router.push('/dashboard');
     } catch (err) {
       console.error(err);

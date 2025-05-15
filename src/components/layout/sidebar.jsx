@@ -16,9 +16,11 @@ import {
   ShieldCheck,
   LogOut,
   MailCheck,
+  UserPlus,
 } from "lucide-react";
 
 const menuItems = [
+  { label: "Add Employees", icon: UserPlus, href: "/addemployees" },
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Assign Task", icon: ClipboardCheck, href: "/assigntask" },
   { label: "Attendance", icon: CalendarDays, href: "/attendance" },
