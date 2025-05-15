@@ -1,7 +1,7 @@
 'use client';
 import Head from 'next/head';
 import { useRouter } from 'next/navigation';
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -15,19 +15,19 @@ export default function Loginpage() {
     "Stay connected to your productivity, anytime, anywhere."
   ];
   const [index, setIndex] = useState(0);
-    const [animate, setAnimate] = useState(true);
-  
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setAnimate(false); // reset animation
-        setTimeout(() => {
-          setIndex((prev) => (prev + 1) % texts.length);
-          setAnimate(true); // re-trigger animation
-        }, 100); // short delay to reset class
-      }, 3000); // every 3 seconds
-  
-      return () => clearInterval(interval);
-    }, []);
+  const [animate, setAnimate] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimate(false); // reset animation
+      setTimeout(() => {
+        setIndex((prev) => (prev + 1) % texts.length);
+        setAnimate(true); // re-trigger animation
+      }, 100); // short delay to reset class
+    }, 3000); // every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
   const router = useRouter();
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -81,7 +81,7 @@ export default function Loginpage() {
       return;
     }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/user/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/adminLogin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ export default function Loginpage() {
         return;
       }
 
-      toast.success('Login successful!');
+      toast.success('Login successful!', 1000);
       router.push('/dashboard');
     } catch (err) {
       console.error(err);
@@ -119,19 +119,18 @@ export default function Loginpage() {
           <h1 className="text-4xl font-bold text-black mb-4">Welcome Back!</h1>
           <Image src="/login/logimage.png" alt="Illustration" width={400} height={320} className="mb-5" />
           <p
-          key={index} // ensures animation re-runs
-          className={`text-black text-2xl mx-30 text-center  transition-all duration-700 ease-in-out ${
-            animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-          }`}
-        >
-          {texts[index]}
-        </p>
+            key={index} // ensures animation re-runs
+            className={`text-black text-2xl mx-30 text-center  transition-all duration-700 ease-in-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+              }`}
+          >
+            {texts[index]}
+          </p>
         </div>
 
         {/* Right Panel */}
         <div
           className="w-1/2 h-full flex flex-col bg-white items-center justify-center px-8 relative"
-       
+
         >
           {/* Decorative Images */}
           <Image src="/login/vector.png" alt="vector" height={50} width={80} className="absolute z-0" style={{ top: '50px', right: '100px' }} />
@@ -148,72 +147,72 @@ export default function Loginpage() {
 
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-[1px_4px_10px_lightgray] p-10 w-[550px] h-[400px] max-w-full z-10">
-  {/* Your content goes here */}
+            {/* Your content goes here */}
 
 
             <form className="space-y-4" onSubmit={handleLogin}>
               {/* Email / Phone */}
               <div className="flex justify-center items-center mt-6">
-  <div className="w-full max-w-md">
-  <label className="block font-poppins font-normal text-[19px] leading-[100%] text-black mb-1 ml-1">
-  E-mail / Phone
-</label>
+                <div className="w-full max-w-md">
+                  <label className="block font-poppins font-normal text-[19px] leading-[100%] text-black mb-1 ml-1">
+                    E-mail / Phone
+                  </label>
 
 
-    <input
-      type="text"
-      value={emailOrPhone}
-      onChange={(e) => {
-        const value = e.target.value;
-        const isNumeric = /^\d+$/.test(value); // Check if input is numeric
+                  <input
+                    type="text"
+                    value={emailOrPhone}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const isNumeric = /^\d+$/.test(value); // Check if input is numeric
 
-        if (isNumeric) {
-          // Restrict phone number to exactly 10 digits
-          if (value.length <= 10) {
-            setEmailOrPhone(value);
-          }
-        } else {
-          // Allow email input without restrictions
-          setEmailOrPhone(value);
-        }
-      }}
-      placeholder="Enter your email or phone"
-      className="w-full px-4 py-3 rounded-xl bg-white text-black shadow-[1px_4px_10px_lightgray] focus:outline-none"
-    />
-  </div>
-</div>
-
-{/*Password*/}
-<div className="flex justify-center items-center mt-6">
-  <div className="w-full max-w-md">
-  <label className="block font-poppins font-normal text-[19px] leading-[100%] text-black mb-1 ml-1">
-  Password
-</label>
-
-<div className="relative">
-  <input
-    type={showPassword ? 'text' : 'password'}
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-    placeholder="Enter above 8 character secure password"
-    required
-    minLength={8}
-    className="w-full px-4 py-3 pr-10 rounded-xl bg-white text-black shadow-[1px_4px_10px_lightgray] focus:outline-none"
-  />
-  <span
-    onClick={() => setShowPassword(!showPassword)}
-    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-xl"
-    title={showPassword ? 'Hide password' : 'Show password'}
-  >
-    {showPassword ? <FaEyeSlash /> : <FaEye />}
-  </span>
-</div>
-
-                <Link href="/forgetpassword" className="text-base text-right block mt-4 text-[rgba(62,144,151,1)] hover:underline">
-  Forget Password?
-</Link>
-
+                      if (isNumeric) {
+                        // Restrict phone number to exactly 10 digits
+                        if (value.length <= 10) {
+                          setEmailOrPhone(value);
+                        }
+                      } else {
+                        // Allow email input without restrictions
+                        setEmailOrPhone(value);
+                      }
+                    }}
+                    placeholder="Enter your email or phone"
+                    className="w-full px-4 py-3 rounded-xl bg-white text-black shadow-[1px_4px_10px_lightgray] focus:outline-none"
+                  />
+                </div>
               </div>
+
+              {/*Password*/}
+              <div className="flex justify-center items-center mt-6">
+                <div className="w-full max-w-md">
+                  <label className="block font-poppins font-normal text-[19px] leading-[100%] text-black mb-1 ml-1">
+                    Password
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter above 8 character secure password"
+                      required
+                      minLength={8}
+                      className="w-full px-4 py-3 pr-10 rounded-xl bg-white text-black shadow-[1px_4px_10px_lightgray] focus:outline-none"
+                    />
+                    <span
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-xl"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </span>
+                  </div>
+
+                  <Link href="/forgetpassword" className="text-base text-right block mt-4 text-[rgba(62,144,151,1)] hover:underline">
+                    Forget Password?
+                  </Link>
+
+                </div>
               </div>
 
               {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -233,8 +232,8 @@ export default function Loginpage() {
             <p className="text-lg mt-6  text-center  text-black font-semibold ">
               Don’t have an account?{' '}
               <Link href="/signup" className="text-[#3E9097] hover:underline">
-  Sign Up
-</Link>
+                Sign Up
+              </Link>
 
             </p>
           </div>

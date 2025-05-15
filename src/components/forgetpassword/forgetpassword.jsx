@@ -16,7 +16,7 @@ export default function Forgotpassword() {
         e.preventDefault();
 
         try {
-            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/generate-otp`, {
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/generate-otp-admin`, {
                 email,
             });
 
@@ -45,7 +45,7 @@ export default function Forgotpassword() {
         if (isResendDisabled) return;
 
         try {
-            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/generate-otp`, {
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_API}/forgotpassword/generate-otp-admin`, {
                 email,
             });
 
