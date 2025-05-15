@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { FaSort, FaCheckSquare, FaTimesCircle } from 'react-icons/fa';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 
 const expenses = [
   {
@@ -13,6 +14,7 @@ const expenses = [
     amount: '₹1,200',
     date: '10-05-2025',
     status: 'Approved',
+    document: 'invoice_nxc101.pdf',
   },
   {
     id: 'NXC102',
@@ -21,6 +23,7 @@ const expenses = [
     amount: '₹3,000',
     date: '15-03-2025',
     status: 'Pending',
+    document: 'receipt_nxc102.pdf',
   },
   {
     id: 'NXC103',
@@ -29,6 +32,7 @@ const expenses = [
     amount: '₹1,500',
     date: '18-05-2025',
     status: 'Approved',
+    document: 'bill_nxc103.pdf',
   },
   {
     id: 'NXC104',
@@ -37,6 +41,7 @@ const expenses = [
     amount: '₹5,200',
     date: '23-05-2025',
     status: 'Rejected',
+    document: 'invoice_nxc104.pdf',
   },
 ];
 
@@ -57,12 +62,23 @@ const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
 
 const ExpenseRequest = () => {
   const [activeStatus, setActiveStatus] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState(null);
   const router = useRouter();
 
   const filteredExpenses =
     activeStatus === 'All'
       ? expenses
       : expenses.filter((e) => e.status === activeStatus);
+      
+  const openModal = (document) => {
+    setCurrentDocument(document);
+    setShowModal(true);
+  };
+  
+  const closeModal = () => {
+    setShowModal(false);
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -111,8 +127,9 @@ const ExpenseRequest = () => {
                 </div>
               </th>
               <th className="px-4 py-2 border-r border-white">Status</th>
-              <th className="px-4 py-2">Take Action</th>
-              <th className="px-4 py-2">More</th>
+              <th className="px-4 py-2 border-r border-white">Documents</th>
+              <th className="px-4 py-2 border-r border-white">Take Action</th>
+              <th className="px-4 py-2 border-r border-white">More</th>
             </tr>
           </thead>
           <tbody className="text-gray-800">
@@ -133,6 +150,17 @@ const ExpenseRequest = () => {
                 >
                   {expense.status}
                 </td>
+                <td className="px-4 py-2 text-blue-600 underline cursor-pointer">
+                  <span 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openModal(expense.document);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    View
+                  </span>
+                </td>
                 <td className="px-4 py-2 flex items-center gap-2 text-sm">
                   <button className="flex items-center text-green-600 hover:text-green-700 font-medium">
                     <FaCheckSquare className="mr-1" /> Approved
@@ -146,7 +174,7 @@ const ExpenseRequest = () => {
                     <BsThreeDotsVertical className="text-xl cursor-pointer" />
                     <div className="absolute right-0 mt-1 w-24 bg-white border border-gray-300 shadow-lg rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                       <button
-                        onClick={() => router.push(`/expense-details/${expense.id}`)}
+                        onClick={() => router.push(`/expense`)}
                         className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
                       >
                         View
@@ -158,7 +186,7 @@ const ExpenseRequest = () => {
             ))}
             {filteredExpenses.length === 0 && (
               <tr>
-                <td colSpan="8" className="text-center py-4 text-gray-500">
+                <td colSpan="9" className="text-center py-4 text-gray-500">
                   No records found for "{activeStatus}".
                 </td>
               </tr>
@@ -166,6 +194,48 @@ const ExpenseRequest = () => {
           </tbody>
         </table>
       </div>
+      
+      {/* Document Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={closeModal}></div>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl z-10 relative">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Receipt Document</h3>
+              <button 
+                type="button"
+                onClick={closeModal}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="bg-gray-100 p-4 rounded-lg flex flex-col items-center justify-center">
+              <div className="w-full h-64 flex items-center justify-center border border-gray-300 bg-white rounded-md mb-4">
+                <img src="/api/placeholder/400/320" alt="Receipt document" className="max-h-full object-contain" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-3">Document: {currentDocument}</p>
+                <div className="flex gap-4 justify-center">
+                  <button 
+                    type="button"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Download
+                  </button>
+                  <button 
+                    type="button"
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Print
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

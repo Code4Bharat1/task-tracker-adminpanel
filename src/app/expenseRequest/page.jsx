@@ -4,6 +4,7 @@ import React from 'react'
 import ExpenseRequest from '@/components/expenseRequest/expenseRequest';
 
 export default function Home() {
+
     return (
         <div className="h-screen overflow-hidden"> {/* Prevent page scroll */}
             {/* Sidebar - Fixed */}
@@ -20,6 +21,7 @@ export default function Home() {
             <div className="mt-[60px] ml-[16.6667%] h-[calc(100vh-60px)] overflow-y-auto p-4 bg-white">
                 <ExpenseRequest/>
             </div>
+            
         </div>
     );
 }
