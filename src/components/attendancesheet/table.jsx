@@ -2,277 +2,68 @@
 import { useState, useEffect } from "react";
 
 export default function AttendanceTable({ selectedDate, selectedRemark }) {
-  const allData = [
-    {
-      id: 1,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-05",
-    },
-    {
-      id: 2,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-05",
-    },
-    {
-      id: 3,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-05",
-    },
-    {
-      id: 4,
-      name: "Anjali D",
-      inTime: "10:40:48",
-      outTime: "19:58:16",
-      remark: "Late",
-      date: "2025-05-01",
-    },
-    {
-      id: 5,
-      name: "Prashant P",
-      inTime: "-",
-      outTime: "-",
-      remark: "Absent",
-      date: "2025-05-01",
-    },
-    {
-      id: 6,
-      name: "Anjali D",
-      inTime: "09:56:48",
-      outTime: "20:12:10",
-      remark: "Present",
-      date: "2025-05-05",
-    },
-    {
-      id: 7,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 8,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-04",
-    },
-    {
-      id: 9,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 10,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-02",
-    },
-    {
-      id: 11,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-02",
-    },
-    {
-      id: 12,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-05",
-    },
-    {
-      id: 13,
-      name: "Anjali D",
-      inTime: "10:40:48",
-      outTime: "19:58:16",
-      remark: "Late",
-      date: "2025-05-08",
-    },
-    {
-      id: 14,
-      name: "Prashant P",
-      inTime: "-",
-      outTime: "-",
-      remark: "Absent",
-      date: "2025-05-07",
-    },
-    {
-      id: 15,
-      name: "Anjali D",
-      inTime: "09:56:48",
-      outTime: "20:12:10",
-      remark: "Present",
-      date: "2025-05-05",
-    },
-    {
-      id: 16,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 17,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-04",
-    },
-    {
-      id: 18,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 19,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-08",
-    },
-    {
-      id: 20,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-08",
-    },
-    {
-      id: 21,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-08",
-    },
-    {
-      id: 22,
-      name: "Anjali D",
-      inTime: "10:40:48",
-      outTime: "19:58:16",
-      remark: "Late",
-      date: "2025-05-07",
-    },
-    {
-      id: 23,
-      name: "Prashant P",
-      inTime: "-",
-      outTime: "-",
-      remark: "Absent",
-      date: "2025-05-05",
-    },
-    {
-      id: 24,
-      name: "Anjali D",
-      inTime: "09:56:48",
-      outTime: "20:12:10",
-      remark: "Present",
-      date: "2025-05-06",
-    },
-    {
-      id: 25,
-      name: "Prashant P",
-      inTime: "09:36:15",
-      outTime: "19:31:15",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 26,
-      name: "Anjali D",
-      inTime: "10:50:33",
-      outTime: "20:25:00",
-      remark: "Late",
-      date: "2025-05-04",
-    },
-    {
-      id: 27,
-      name: "Prashant P",
-      inTime: "09:44:30",
-      outTime: "19:44:34",
-      remark: "Present",
-      date: "2025-05-04",
-    },
-    {
-      id: 28,
-      name: "Prashant P",
-      inTime: "09:30:00",
-      outTime: "19:30:00",
-      remark: "Present",
-      date: "2025-04-13",
-    },
-    {
-      id: 29,
-      name: "Anjali D",
-      inTime: "10:15:00",
-      outTime: "20:00:00",
-      remark: "Late",
-      date: "2025-04-15",
-    },
-  ];
-
   const [sortedGroupedData, setSortedGroupedData] = useState([]);
 
   useEffect(() => {
-    let result = [...allData];
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://localhost:4110/api/attendance/allAttendance", {
+          method: "GET",
+          credentials: "include", // 🔑 this allows cookies to be sent
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-    if (selectedDate) {
-      result = result.filter((item) => item.date === selectedDate);
-    } else {
-      const today = new Date();
-      const currentMonth = today.getMonth() + 1;
-      const currentYear = today.getFullYear();
-      result = result.filter((item) => {
-        const itemDate = new Date(item.date);
-        return (
-          itemDate.getFullYear() === currentYear &&
-          itemDate.getMonth() + 1 === currentMonth
-        );
-      });
-    }
+        const data = await res.json();
 
-    if (selectedRemark) {
-      result = result.filter((item) => item.remark === selectedRemark);
-    }
+        // Format and map the backend data to match the expected structure
+        let result = data.map((item) => ({
+          id: item._id,
+          name: `${item.firstName} ${item.lastName}`,
+          inTime: item.punchIn ? new Date(item.punchIn).toLocaleTimeString() : "-",
+          outTime: item.punchOut ? new Date(item.punchOut).toLocaleTimeString() : "-",
+          remark: item.remark,
+          date: new Date(item.date).toISOString().split("T")[0], // YYYY-MM-DD format
+        }));
 
-    const grouped = result.reduce((acc, item) => {
-      const date = item.date;
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(item);
-      return acc;
-    }, {});
+        if (selectedDate) {
+          result = result.filter((item) => item.date === selectedDate);
+        } else {
+          const today = new Date();
+          const currentMonth = today.getMonth() + 1;
+          const currentYear = today.getFullYear();
+          result = result.filter((item) => {
+            const itemDate = new Date(item.date);
+            return (
+              itemDate.getFullYear() === currentYear &&
+              itemDate.getMonth() + 1 === currentMonth
+            );
+          });
+        }
 
-    const sorted = Object.entries(grouped)
-      .map(([date, records]) => ({ date, records }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (selectedRemark) {
+          result = result.filter((item) => item.remark === selectedRemark);
+        }
 
-    setSortedGroupedData(sorted);
+        const grouped = result.reduce((acc, item) => {
+          const date = item.date;
+          if (!acc[date]) acc[date] = [];
+          acc[date].push(item);
+          return acc;
+        }, {});
+
+        const sorted = Object.entries(grouped)
+          .map(([date, records]) => ({ date, records }))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        setSortedGroupedData(sorted);
+      } catch (error) {
+        console.error("Failed to fetch attendance data:", error);
+      }
+    };
+
+    fetchData();
   }, [selectedDate, selectedRemark]);
 
   const formatDate = (dateString) => {

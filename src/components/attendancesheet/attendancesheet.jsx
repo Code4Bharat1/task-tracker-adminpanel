@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -8,13 +8,17 @@ export default function AttendanceComponent({
   onRemarkChange,
   initialDate,
 }) {
+  const today = new Date().toISOString().split("T")[0];
   const [remarkType, setRemarkType] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(initialDate || today);
+
+  useEffect(() => {
+    onDateChange(initialDate || today);
+  }, []);
 
   const handleDateChange = (e) => {
     const date = e.target.value;
     setSelectedDate(date);
-    // Pass empty string to show all when date is cleared
     onDateChange(date || "");
   };
 
@@ -23,6 +27,7 @@ export default function AttendanceComponent({
     setRemarkType(remark);
     onRemarkChange(remark);
   };
+
   const underlineRef = useRef(null);
 
   useGSAP(() => {
