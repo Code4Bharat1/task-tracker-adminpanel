@@ -289,7 +289,7 @@ export default function AttendanceTable({ selectedDate, selectedRemark }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl mt-8 space-y-8">
       {sortedGroupedData.length > 0 ? (
         sortedGroupedData.map(({ date, records }) => (
           <div key={date} className="mb-8">
