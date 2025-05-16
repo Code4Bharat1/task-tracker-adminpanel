@@ -21,7 +21,7 @@ const RegistrationForm = () => {
         phone: "",
         desiredPlan: "",
         expectedStartDate: "",
-        expectedUsers: "",
+        numberOfExpectedUsers: "",
         planPhoneNumber: "",
         termsAccepted: true, // Added terms acceptance field
     });
@@ -186,10 +186,10 @@ const RegistrationForm = () => {
             newErrors.expectedStartDate = "Expected start date is required";
         }
 
-        if (!formData.expectedUsers) {
-            newErrors.expectedUsers = "Number of expected users is required";
-        } else if (formData.expectedUsers <= 0) {
-            newErrors.expectedUsers = "Number of users must be greater than 0";
+        if (!formData.numberOfExpectedUsers) {
+            newErrors.numberOfExpectedUsers = "Number of expected users is required";
+        } else if (formData.numberOfExpectedUsers <= 0) {
+            newErrors.numberOfExpectedUsers = "Number of users must be greater than 0";
         }
 
         if (!formData.planPhoneNumber.trim()) {
@@ -260,7 +260,7 @@ const RegistrationForm = () => {
                 planPreferences: {
                     desiredPlan: formData.desiredPlan,
                     expectedStartDate: formData.expectedStartDate,
-                    expectedUsers: formData.expectedUsers,
+                    numberOfExpectedUsers: formData.numberOfExpectedUsers,
                     supportPhoneNumber: formData.planPhoneNumber,
                 },
                 termsAccepted: formData.termsAccepted,
@@ -269,7 +269,7 @@ const RegistrationForm = () => {
 
             try {
                 const result = await registerCompany(formattedData);
-                toast.success("Registration completed successfully! Redirecting to dashboard...");
+                toast.success("Company registered successfully and approval is pending. ");
                 console.log("✅ Success:", result);
                 
                 // Redirect after short delay
@@ -524,14 +524,14 @@ const RegistrationForm = () => {
                                         <label className="block mb-1 font-medium text-gray-700">Number of Expected Users <span className="text-red-500">*</span></label>
                                         <input
                                             type="number"
-                                            name="expectedUsers"
-                                            value={formData.expectedUsers}
+                                            name="numberOfExpectedUsers"
+                                            value={formData.numberOfExpectedUsers}
                                             onChange={handleChange}
                                             min="1"
-                                            className={`w-full p-3 rounded-xl border ${errors.expectedUsers ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                                            className={`w-full p-3 rounded-xl border ${errors.numberOfExpectedUsers ? 'border-red-500 bg-red-50' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                                             placeholder="Enter number of users"
                                         />
-                                        {errors.expectedUsers && <p className="text-red-500 text-sm mt-1">{errors.expectedUsers}</p>}
+                                        {errors.numberOfExpectedUsers && <p className="text-red-500 text-sm mt-1">{errors.numberOfExpectedUsers}</p>}
                                     </div>
 
                                     <div>
