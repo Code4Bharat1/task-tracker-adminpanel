@@ -137,7 +137,7 @@ export default function LeaveTable() {
                 <td className="px-4 py-2 font-medium text-center relative">
                   <div className="custom-border-left"></div>
                   <button
-                    onClick={() => router.push("/leaverequest")}
+                    onClick={() => router.push("/leavetable/leave-approvals")}
                     className="text-[#018ABE] underline hover:text-blue-800 transition"
                   >
                     View
