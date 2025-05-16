@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FiSearch, FiCalendar } from "react-icons/fi";
 
 export default function ViewTimesheet() {
@@ -301,10 +301,15 @@ export default function ViewTimesheet() {
     },
   ];
 
+  const [currentView, setCurrentView] = useState("day");
+
+  const [useSingleDayFilter, setUseSingleDayFilter] = useState(true);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+
   const [selectedName, setSelectedName] = useState("Chinmay Gawade");
   const [nameSearch, setNameSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [currentView, setCurrentView] = useState("week");
+
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(
     today.toISOString().split("T")[0]
@@ -312,7 +317,6 @@ export default function ViewTimesheet() {
   const [filteredTimesheetData, setFilteredTimesheetData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
-  const [useSingleDayFilter, setUseSingleDayFilter] = useState(false);
 
   const nameOptions = [
     "Chinmay Gawade",
@@ -340,6 +344,7 @@ export default function ViewTimesheet() {
     "December",
   ];
 
+  const viewDropdownRef = useRef(null);
   // Generate years (from 2020 to current year + 5)
   const currentYear = new Date().getFullYear();
   const years = Array.from(
@@ -388,6 +393,21 @@ export default function ViewTimesheet() {
     };
   };
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        viewDropdownRef.current &&
+        !viewDropdownRef.current.contains(event.target)
+      ) {
+        setIsViewOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   // Update date ranges when view changes
   useEffect(() => {
     const today = new Date();
@@ -497,63 +517,161 @@ export default function ViewTimesheet() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Controls */}
-      <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
-        <div className="flex flex-col">
-          <select
-            value={currentView}
-            onChange={(e) => {
-              setCurrentView(e.target.value);
-              setUseSingleDayFilter(e.target.value === "day");
-            }}
-            className="border border-gray-300 rounded-md px-3 py-2"
-          >
-            {["day", "week", "month", "year"].map((view) => (
-              <option key={view} value={view}>
-                {view.charAt(0).toUpperCase() + view.slice(1)}
-              </option>
-            ))}
-          </select>
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+        {/* Left side filters grouped here */}
+        <div className="flex flex-wrap gap-14 items-center">
+          <div className="flex flex-col relative" ref={viewDropdownRef}>
+            <button
+              onClick={() => setIsViewOpen(!isViewOpen)}
+              className={`border border-gray-300 px-3 py-2 bg-white flex justify-between items-center min-w-32 ${
+                isViewOpen ? "rounded-t-md" : "rounded-md"
+              }`}
+            >
+              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+              <svg
+                className={`ml-2 w-4 h-4 transition-transform ${
+                  isViewOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                ></path>
+              </svg>
+            </button>
+
+            {isViewOpen && (
+              <div className="absolute top-full left-0 w-full bg-white border border-gray-300 border-t-0 z-10">
+                {["day", "week", "month", "year"].map((view) => (
+                  <div
+                    key={view}
+                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
+                    onClick={() => {
+                      setCurrentView(view);
+                      setUseSingleDayFilter(view === "day");
+                      setIsViewOpen(false);
+                    }}
+                  >
+                    {view.charAt(0).toUpperCase() + view.slice(1)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(currentView === "day" || currentView === "week") && (
+            <div className="flex flex-col">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2"
+              />
+            </div>
+          )}
+
+          {currentView === "month" && (
+            <div className="flex gap-2">
+              <div className="relative">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+                >
+                  {months.map((month, index) => (
+                    <option key={month} value={index + 1} className="bg-white">
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    ></path>
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+                >
+                  {years.map((year) => (
+                    <option key={year} value={year} className="bg-white">
+                      {year}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    ></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentView === "year" && (
+            <div className="relative">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year} className="bg-white">
+                    {year}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
-
-        {(currentView === "day" || currentView === "week") && (
-          <div className="flex flex-col">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2"
-            />
-          </div>
-        )}
-
-        {currentView === "month" && (
-          <div className="flex gap-2">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="border border-gray-300  px-3 py-2"
-            >
-              {months.map((month, index) => (
-                <option key={month} value={index + 1}>
-                  {month}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-md px-3 py-2"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {currentView === "year" && (
           <div className="flex flex-col">
             <select
@@ -570,7 +688,8 @@ export default function ViewTimesheet() {
           </div>
         )}
 
-        <div className="flex flex-col relative w-90">
+        {/* Right side search bar */}
+        <div className="relative w-90">
           <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-gray-400">
             <FiSearch className="w-5 h-5" />
           </div>
@@ -582,7 +701,7 @@ export default function ViewTimesheet() {
               setShowDropdown(true);
             }}
             placeholder="Enter name"
-            className="border border-gray-300 rounded-4xl pl-14 pr-3 py-2"
+            className="border border-gray-300 rounded-full pl-14 pr-3 py-2 w-full"
           />
           {showDropdown && filteredNames.length > 0 && (
             <ul className="absolute z-10 w-full max-h-40 overflow-auto border border-gray-300 rounded-md bg-white mt-1">
