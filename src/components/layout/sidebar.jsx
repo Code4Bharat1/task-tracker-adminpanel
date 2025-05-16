@@ -43,7 +43,7 @@ export default function Sidebar() {
       className="
         fixed h-screen
         w-[50px] sm:w-[120px] md:w-[180px] lg:w-1/6
-        bg-gradient-to-b from-[#018ABE] from-15% via-[#65B7D4] to-[#E0E2E3]
+        bg-gradient-to-b from-[#018ABE] from-15% via-[#65B7D4] via-90% to-[#E0E2E3] 
         text-white flex flex-col items-center py-4 z-50
       "
     >
@@ -81,7 +81,7 @@ export default function Sidebar() {
             "
           >
             <item.icon className="w-5 h-5" />
-            <span className="hidden sm:inline font-medium text-[10px] sm:text-[12px] md:text-[13px] lg:text-sm">
+            <span className="hidden sm:inline font-medium text-[10px] sm:text-[12px] md:text-sm lg:text-lg">
               {item.label}
             </span>
           </Link>
