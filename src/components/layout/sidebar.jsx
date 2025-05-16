@@ -17,20 +17,21 @@ import {
   LogOut,
   MailCheck,
   UserPlus,
+  Send,
 } from "lucide-react";
 
 const menuItems = [
   { label: "Add Employees", icon: UserPlus, href: "/addemployees" },
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Assign Task", icon: ClipboardCheck, href: "/assigntask" },
-  { label: "Attendance", icon: CalendarDays, href: "/attendance" },
-  { label: "Add TimeSheet", icon: Clock, href: "/timesheet" },
+  { label: "View Attendance", icon: CalendarDays, href: "/viewattendance" },
+  { label: "View TimeSheet", icon: Clock, href: "/viewtimesheet" },
   { label: "Calendar", icon: FileText, href: "/calendar" },
   { label: "Document", icon: FileCheck, href: "/document" },
   { label: "Leave", icon: MailCheck, href: "/leavetable" },
   { label: "Salary", icon: Coins, href: "/salary" },
   { label: "Expense", icon: Receipt, href: "/expenseRequest" },
-  { label: "Post Upload", icon: ShieldCheck, href: "/postupload" },
+  { label: "Post Upload", icon: Send, href: "/postupload" },
   { label: "Performance Board", icon: TrendingUp, href: "/performanceboard" },
   { label: "Company Policies", icon: ShieldCheck, href: "/companypolicy" },
   { label: "Logout", icon: LogOut, href: "/" },
@@ -38,14 +39,21 @@ const menuItems = [
 
 export default function Sidebar() {
   return (
-    <div className="fixed min-h-screen w-1/6 bg-gradient-to-b from-[#018ABE] from-15% via-[#65B7D4] to-[#E0E2E3] text-white flex flex-col items-center py-6">
+    <div
+      className="
+        fixed h-screen
+        w-[50px] sm:w-[120px] md:w-[180px] lg:w-1/6
+        bg-gradient-to-b from-[#018ABE] from-15% via-[#65B7D4] to-[#E0E2E3]
+        text-white flex flex-col items-center py-4 z-50
+      "
+    >
       {/* Logo */}
-      <div className="flex items-center justify-center h-16 w-full mb-6">
+      <div className="flex items-center justify-center h-12 w-full mb-2">
         <Image
           src="/signup/tasklogo.png"
           alt="Logo"
-          width={100}
-          height={60}
+          width={120}
+          height={40}
           className="object-contain"
         />
       </div>
@@ -53,32 +61,27 @@ export default function Sidebar() {
       {/* Scrollable Menu */}
       <nav
         className="
-          flex-1
-          overflow-y-auto
-          w-full
-          px-2
-          scrollbar-thin
-          scrollbar-thumb-white
-          scrollbar-track-[#018ABE]
+          flex-1 w-full px-2 overflow-y-auto
+          scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent
+          hover:scrollbar-thumb-gray-600
+          scrollbar-thumb-rounded
         "
+        style={{
+          scrollbarWidth: "thin",
+        }}
       >
         {menuItems.map((item, idx) => (
           <Link
             key={idx}
             href={item.href}
             className="
-              flex items-center gap-3
-              px-3 py-2
+              flex items-center gap-2 px-2 py-2
               hover:bg-white hover:text-sky-700
-              rounded-lg
-              transition duration-200
+              rounded-md transition duration-200
             "
           >
-            {/* Icon: shrinks on small screens */}
-            <item.icon className="w-5 h-5 max-sm:w-4 max-sm:h-4" />
-
-            {/* Label: shrinks on small screens */}
-            <span className="font-medium text-base max-sm:text-xs">
+            <item.icon className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium text-[10px] sm:text-[12px] md:text-[13px] lg:text-sm">
               {item.label}
             </span>
           </Link>
