@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   FiSearch, FiCalendar, FiFilter, FiDownload,
   FiRefreshCw, FiAlertCircle, FiUser, FiClock,
@@ -62,10 +62,7 @@ export default function ViewTimesheet() {
   // Memoized data processing
   const uniqueEmployees = useMemo(() => {
     if (!timesheetData.length) return [];
-
-    // Extract unique employees from timesheet data
     const employeeMap = new Map();
-
     timesheetData.forEach(timesheet => {
       const userId = timesheet.userId._id;
       if (!employeeMap.has(userId)) {
@@ -79,142 +76,101 @@ export default function ViewTimesheet() {
         });
       }
     });
-
     return Array.from(employeeMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name)
     );
   }, [timesheetData]);
 
-  // Initialize employees when data changes
-  useEffect(() => {
-    if (uniqueEmployees.length > 0 && !selectedEmployee) {
-      setEmployees(uniqueEmployees);
-      setFilteredEmployees(uniqueEmployees.slice(0, EMPLOYEES_PER_PAGE));
-      setSelectedEmployee(uniqueEmployees[0]);
-    } else if (uniqueEmployees.length > 0) {
-      setEmployees(uniqueEmployees);
+  // Employee filtering logic
+  const filterEmployees = useCallback((query) => {
+    const lowercaseQuery = query.toLowerCase();
+    return employees.filter(employee =>
+      employee.name.toLowerCase().includes(lowercaseQuery) ||
+      employee.email.toLowerCase().includes(lowercaseQuery)
+    );
+  }, [employees]);
 
-      // Filter employees based on search
-      handleEmployeeSearch(employeeSearchQuery);
+  // Update filtered employees
+  useEffect(() => {
+    if (employees.length > 0) {
+      const filtered = filterEmployees(employeeSearchQuery);
+      setFilteredEmployees(filtered.slice(0, EMPLOYEES_PER_PAGE * employeePage));
+      setHasMoreEmployees(filtered.length > EMPLOYEES_PER_PAGE * employeePage);
+    }
+  }, [employeeSearchQuery, employees, employeePage, filterEmployees]);
+
+  // Initialize employees
+  useEffect(() => {
+    if (uniqueEmployees.length > 0) {
+      setEmployees(uniqueEmployees);
+      if (selectedEmployee) {
+        const freshEmployee = uniqueEmployees.find(e => e.id === selectedEmployee.id);
+        setSelectedEmployee(freshEmployee || uniqueEmployees[0]);
+      } else {
+        setSelectedEmployee(uniqueEmployees[0]);
+      }
     }
   }, [uniqueEmployees]);
 
-  // Fetch timesheets from the API
+  // Fetch timesheets
   const fetchTimesheets = async () => {
     setIsLoading(true);
     setErrorMessage("");
-
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_API}/timesheet/admin/timesheets`,
         { withCredentials: true }
       );
-
       if (response.data.success) {
         setTimesheetData(response.data.data);
-
-        // Extract unique bucket types
         const buckets = [...new Set(
           response.data.data.flatMap(sheet =>
             sheet.items.map(item => item.bucket)
           )
         )];
-
         setFilterBuckets(buckets);
-
-        // Format and filter the data
         updateFilteredData(response.data.data);
-      } else {
-        setErrorMessage("Failed to load timesheet data");
       }
     } catch (error) {
-      console.error("Error fetching timesheets:", error);
-      setErrorMessage(error.response?.data?.message || "Failed to load timesheet data");
+      setErrorMessage(error.response?.data?.message || "Failed to load data");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchTimesheets();
   }, []);
 
-  // Handle outside clicks for dropdowns
+  // Event listeners for dropdowns
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (viewDropdownRef.current && !viewDropdownRef.current.contains(event.target)) {
         setIsViewOpen(false);
       }
-
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
         setIsFilterOpen(false);
       }
-
       if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
         setIsEmployeeListOpen(false);
       }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Efficient employee search with debounce
-  const debouncedSearch = useRef(
-    debounce((query) => {
-      if (!query.trim()) {
-        setFilteredEmployees(employees.slice(0, EMPLOYEES_PER_PAGE));
-        setEmployeePage(1);
-        setHasMoreEmployees(employees.length > EMPLOYEES_PER_PAGE);
-        return;
-      }
-
-      const lowercaseQuery = query.toLowerCase();
-      const filtered = employees.filter(employee =>
-        employee.name.toLowerCase().includes(lowercaseQuery) ||
-        employee.email.toLowerCase().includes(lowercaseQuery)
-      );
-
-      setFilteredEmployees(filtered.slice(0, EMPLOYEES_PER_PAGE));
-      setEmployeePage(1);
-      setHasMoreEmployees(filtered.length > EMPLOYEES_PER_PAGE);
-    }, 300)
-  ).current;
-
-  // Handle employee search
+  // Search handlers
   const handleEmployeeSearch = (query) => {
     setEmployeeSearchQuery(query);
-    debouncedSearch(query);
+    setEmployeePage(1);
   };
 
-  // Load more employees when scrolling
+  // Scroll handler
   const handleEmployeeListScroll = () => {
     if (!employeeListRef.current || !hasMoreEmployees) return;
-
     const { scrollTop, scrollHeight, clientHeight } = employeeListRef.current;
-
-    // When user scrolls to bottom, load more employees
     if (scrollTop + clientHeight >= scrollHeight - 20) {
-      const nextPage = employeePage + 1;
-      const startIdx = (nextPage - 1) * EMPLOYEES_PER_PAGE;
-
-      let filteredResults;
-      if (employeeSearchQuery.trim()) {
-        const lowercaseQuery = employeeSearchQuery.toLowerCase();
-        filteredResults = employees.filter(employee =>
-          employee.name.toLowerCase().includes(lowercaseQuery) ||
-          employee.email.toLowerCase().includes(lowercaseQuery)
-        ).slice(0, startIdx + EMPLOYEES_PER_PAGE);
-      } else {
-        filteredResults = employees.slice(0, startIdx + EMPLOYEES_PER_PAGE);
-      }
-
-      setFilteredEmployees(filteredResults);
-      setEmployeePage(nextPage);
-      setHasMoreEmployees(filteredResults.length < employees.length);
+      setEmployeePage(prev => prev + 1);
     }
   };
 
@@ -484,12 +440,10 @@ export default function ViewTimesheet() {
       setIsLoading(false);
     }
   };
-
-  return (
+ return (
     <div className="p-4 lg:p-6 max-w-6xl mx-auto">
-      {/* Top section with employee selector and date/filters */}
+      {/* Employee Selector */}
       <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-        {/* Employee selector */}
         <div className="mb-4 relative" ref={employeeDropdownRef}>
           <div className="text-sm text-gray-500 mb-1 font-medium">Employee</div>
           <div
@@ -501,14 +455,13 @@ export default function ViewTimesheet() {
                 {selectedEmployee ? selectedEmployee.firstName[0] + selectedEmployee.lastName[0] : "?"}
               </div>
               <div>
-                <div className="font-medium">{selectedEmployee ? selectedEmployee.name : "Select Employee"}</div>
+                <div className="font-medium">{selectedEmployee?.name || "Select Employee"}</div>
                 <div className="text-xs text-gray-500">{selectedEmployee?.position}</div>
               </div>
             </div>
             <FiChevronDown className={`transition-transform ${isEmployeeListOpen ? "rotate-180" : ""}`} />
           </div>
 
-          {/* Employee dropdown */}
           {isEmployeeListOpen && (
             <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
               <div className="p-2 border-b border-gray-200">
@@ -537,39 +490,30 @@ export default function ViewTimesheet() {
                 ref={employeeListRef}
                 onScroll={handleEmployeeListScroll}
               >
-                {filteredEmployees.length > 0 ? (
-                  filteredEmployees.map((employee) => (
-                    <div
-                      key={employee.id}
-                      className={`flex items-center p-2 hover:bg-blue-50 cursor-pointer ${selectedEmployee?.id === employee.id ? "bg-blue-50" : ""
-                        }`}
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setIsEmployeeListOpen(false);
-                      }}
-                    >
-                      <div className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-2">
-                        {employee.firstName[0] + employee.lastName[0]}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{employee.name}</div>
-                        <div className="text-xs text-gray-500">{employee.position}</div>
-                      </div>
-                      {selectedEmployee?.id === employee.id && (
-                        <FiCheck className="text-blue-600" />
-                      )}
+                {filteredEmployees.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className={`flex items-center p-2 hover:bg-blue-50 cursor-pointer ${selectedEmployee?.id === employee.id ? "bg-blue-50" : ""}`}
+                    onClick={() => {
+                      setSelectedEmployee(employee);
+                      setIsEmployeeListOpen(false);
+                    }}
+                  >
+                    <div className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                      {employee.firstName[0] + employee.lastName[0]}
                     </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    No employees found
+                    <div className="flex-1">
+                      <div className="font-medium">{employee.name}</div>
+                      <div className="text-xs text-gray-500">{employee.position}</div>
+                    </div>
+                    {selectedEmployee?.id === employee.id && <FiCheck className="text-blue-600" />}
                   </div>
+                ))}
+                {filteredEmployees.length === 0 && (
+                  <div className="p-4 text-center text-gray-500">No employees found</div>
                 )}
-
                 {hasMoreEmployees && (
-                  <div className="p-2 text-center text-gray-500 text-sm">
-                    Scroll to load more
-                  </div>
+                  <div className="p-2 text-center text-gray-500 text-sm">Scroll to load more</div>
                 )}
               </div>
             </div>
