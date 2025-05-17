@@ -2,26 +2,58 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import axios from "axios";
+import Select from "react-select";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AssignTask() {
   const underlineRef = useRef(null);
+  const [users, setUsers] = useState([]);
+  const [adminInfo, setAdminInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [formData, setFormData] = useState({
     bucketName: "",
     assignedTo: "",
-    assignedBy: "",
     assignDate: "",
     deadline: "",
     dueTime: "",
     priority: "Medium",
     status: "Open",
-    tagMember: "",
+    tagMembers: [],
     attachmentRequired: "No",
     recurring: false,
     taskDescription: "",
     remark: ""
   });
 
+  // Fetch users and admin data when component mounts
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        const usersResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/tasks/getAllUserEmails`,
+          { withCredentials: true }
+        );
+
+        const adminResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/profile/getProfileAdmin`,
+          { withCredentials: true }
+        );
+
+        setUsers(usersResponse.data);
+        setAdminInfo(adminResponse.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
     gsap.fromTo(
       underlineRef.current,
       { width: "0%" },
@@ -34,6 +66,21 @@ export default function AssignTask() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleAssignedToChange = (selectedOption) => {
+    setFormData(prev => ({
+      ...prev,
+      assignedTo: selectedOption ? selectedOption.value : ""
+    }));
+  };
+
+  const handleTagMembersChange = (selectedOptions) => {
+    const selectedIds = selectedOptions ? selectedOptions.map(option => option.value) : [];
+    setFormData(prev => ({
+      ...prev,
+      tagMembers: selectedIds
     }));
   };
 
@@ -50,7 +97,7 @@ export default function AssignTask() {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4110/api/tasks/createTask",
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/tasks/createTask`,
         {
           ...formData,
           attachmentRequired: formData.attachmentRequired === "Yes",
@@ -58,21 +105,43 @@ export default function AssignTask() {
           deadline: new Date(formData.deadline)
         },
         {
-          withCredentials: true // ✅ Important: sends cookies with request
+          withCredentials: true
         }
       );
-      console.log("Task created successfully:", response.data);
-      // Reset form or show success message
+      toast.success("Task assigned successfully!");
+
+      setFormData({
+        bucketName: "",
+        assignedTo: "",
+        assignDate: "",
+        deadline: "",
+        dueTime: "",
+        priority: "Medium",
+        status: "Open",
+        tagMembers: [],
+        attachmentRequired: "No",
+        recurring: false,
+        taskDescription: "",
+        remark: ""
+      });
     } catch (error) {
       console.error("Error creating task:", error);
-      // Handle error (show error message)
+      toast.error("Error creating task. Please try again.");
     }
   };
 
+  const userOptions = users.map(user => ({
+    value: user._id,
+    label: `${user.firstName} ${user.lastName} (${user.email})`
+  }));
+
+  if (isLoading) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="h-auto p-8">
-      {/* Heading */}
+      <ToastContainer />
       <div className="flex justify-start items-center">
         <h1 className="text-2xl font-bold text-center mb-8 relative text-gray-800">
           <span
@@ -104,26 +173,24 @@ export default function AssignTask() {
             />
           </div>
 
-          {/* Assignment Table */}
           <div className="grid grid-cols-3 gap-6 mx-auto mt-10 mb-10">
-            {/* Assigned To */}
             <div className="flex flex-col">
               <label htmlFor="assignedTo" className="mb-1 text-lg font-medium text-gray-700">
                 Assigned to
               </label>
-              <input
-                type="text"
+              <Select
                 id="assignedTo"
                 name="assignedTo"
-                value={formData.assignedTo}
-                onChange={handleInputChange}
-                placeholder="Enter name"
-                className="border border-gray-400 rounded-md px-3 w-60 py-2 text-md shadow-[0px_2px_0px_rgba(0,0,0,0.2)]"
+                options={userOptions}
+                value={userOptions.find(opt => opt.value === formData.assignedTo) || null}
+                onChange={handleAssignedToChange}
+                placeholder="Select a user"
+                className="shadow-[0px_2px_0px_rgba(0,0,0,0.2)] w-60"
+                isClearable
                 required
               />
             </div>
 
-            {/* Assign Date */}
             <div className="flex flex-col">
               <label htmlFor="assignDate" className="mb-1 text-lg font-medium text-gray-700">
                 Assign Date
@@ -139,7 +206,6 @@ export default function AssignTask() {
               />
             </div>
 
-            {/* Deadline */}
             <div className="flex flex-col">
               <label htmlFor="deadline" className="mb-1 text-lg font-medium text-gray-700">
                 Deadline
@@ -160,7 +226,6 @@ export default function AssignTask() {
           <hr />
 
           <div className="grid grid-cols-3 mx-auto mt-10 mb-10 gap-0">
-            {/* Priority */}
             <div className="flex flex-col">
               <label htmlFor="priority" className="text-lg font-medium text-gray-700">
                 Priority
@@ -178,7 +243,6 @@ export default function AssignTask() {
               </select>
             </div>
 
-            {/* Due Time */}
             <div className="flex flex-col">
               <label htmlFor="dueTime" className="text-lg font-medium text-gray-700">
                 Due Time
@@ -195,7 +259,6 @@ export default function AssignTask() {
           </div>
 
           <div className="grid grid-cols-3 gap-6 mx-auto mt-10 mb-10">
-            {/* Assigned By */}
             <div className="flex flex-col">
               <label htmlFor="assignedBy" className="mb-1 text-lg font-medium text-gray-700">
                 Assigned by
@@ -203,16 +266,12 @@ export default function AssignTask() {
               <input
                 type="text"
                 id="assignedBy"
-                name="assignedBy"
-                value={formData.assignedBy}
-                onChange={handleInputChange}
-                placeholder="Name"
-                className="border border-gray-400 rounded-md px-3 w-60 py-2 text-md shadow-[0px_2px_0px_rgba(0,0,0,0.2)]"
-                required
+                value={adminInfo ? adminInfo.fullName : ""}
+                className="border border-gray-400 rounded-md px-3 w-60 py-2 text-md shadow-[0px_2px_0px_rgba(0,0,0,0.2)] bg-gray-100"
+                disabled
               />
             </div>
 
-            {/* Status */}
             <div className="flex flex-col">
               <label htmlFor="status" className="mb-1 text-lg font-medium text-gray-700">
                 Status
@@ -231,19 +290,20 @@ export default function AssignTask() {
               </select>
             </div>
 
-            {/* Tag Member */}
             <div className="flex flex-col">
-              <label htmlFor="tagMember" className="mb-1 text-lg font-medium text-gray-700">
-                Tag Member
+              <label htmlFor="tagMembers" className="mb-1 text-lg font-medium text-gray-700">
+                Tag Members
               </label>
-              <input
-                type="text"
-                id="tagMember"
-                name="tagMember"
-                value={formData.tagMember}
-                onChange={handleInputChange}
-                placeholder="Tag Member"
-                className="border border-gray-400 rounded-md px-3 w-60 py-2 text-md shadow-[0px_2px_0px_rgba(0,0,0,0.2)]"
+              <Select
+                id="tagMembers"
+                name="tagMembers"
+                options={userOptions}
+                value={userOptions.filter(opt => formData.tagMembers.includes(opt.value))}
+                onChange={handleTagMembersChange}
+                placeholder="Select members to tag"
+                className="w-60 shadow-[0px_2px_0px_rgba(0,0,0,0.2)]"
+                isMulti
+                isClearable
               />
             </div>
           </div>
@@ -251,9 +311,7 @@ export default function AssignTask() {
           <hr />
 
           <div className="max-w-6xl mt-10 p-4">
-            {/* Attachment & Recurring Fields in a Row */}
             <div className="flex flex-wrap gap-8 mb-6">
-              {/* Attachment Required */}
               <div>
                 <label className="block mb-1 text-lg font-medium">
                   Attachment is required for closing task?
@@ -269,7 +327,6 @@ export default function AssignTask() {
                 </select>
               </div>
 
-              {/* Recurring */}
               <div>
                 <label className="block mb-1 text-lg font-medium">Recurring</label>
                 <select
@@ -289,7 +346,6 @@ export default function AssignTask() {
               </div>
             </div>
 
-            {/* Task Description */}
             <div className="mb-6">
               <label className="block mb-1 font-medium">Task Description</label>
               <input
@@ -302,7 +358,6 @@ export default function AssignTask() {
               />
             </div>
 
-            {/* Remark */}
             <div className="mb-6">
               <label className="block mb-1 font-medium">Remark</label>
               <input
@@ -314,7 +369,6 @@ export default function AssignTask() {
               />
             </div>
 
-            {/* Submit Button */}
             <div className="flex justify-center">
               <button
                 type="submit"
@@ -324,7 +378,6 @@ export default function AssignTask() {
               </button>
             </div>
           </div>
-
         </div>
       </form>
     </div>

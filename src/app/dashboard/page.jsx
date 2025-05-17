@@ -22,7 +22,7 @@ function Page() {
     useEffect(() => {
         async function fetchTasks() {
             try {
-                const response = await axios.get("http://localhost:4110/api/tasks/getTasks",
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/tasks/getTasks`,
                     {
                         withCredentials: true
                     }
