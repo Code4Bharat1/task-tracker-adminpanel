@@ -3,9 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { TbCalendarPlus } from "react-icons/tb";
-
-
-
 import TaskForm from "./createtask";
 import TaskPage from "./event";
 import SchedualPage from "./schedual";
@@ -20,6 +17,7 @@ const categoryColors = {
   Leaves: "bg-yellow-400",
   Other: "bg-orange-400",
 };
+
 const tabs = [
   {
     label: "Event",
@@ -50,13 +48,6 @@ const tabs = [
   },
 ];
 
-
-const eventDates = {
-  "2025-05-01": ["Daily Task"],
-  "2025-05-03": ["Daily Task", "Meeting"],
-  "2025-05-05": ["Deadline"],
-};
-
 export default function CalendarPage() {
   const initialDate = new Date(2025, 4); // May 2025
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -64,7 +55,9 @@ export default function CalendarPage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState("Task");
+  const [eventDates, setEventDates] = useState({});
   const dropdownRef = useRef(null);
+  const userId = "64b81234567890abcdef1234"; // Replace with actual user ID
 
   useEffect(() => {
     const today = new Date();
@@ -74,6 +67,35 @@ export default function CalendarPage() {
     ).padStart(2, "0")}`;
     setTodayKey(key);
   }, []);
+
+  useEffect(() => {
+    const fetchCalendarData = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/user/calendar/user/${userId}`
+        );
+        const data = await res.json();
+        
+        const groupedEvents = data.reduce((acc, item) => {
+          const eventDate = new Date(item.date);
+          const dateKey = `${eventDate.getUTCFullYear()}-${String(eventDate.getUTCMonth() + 1).padStart(2, "0")}-${String(
+            eventDate.getUTCDate()
+          ).padStart(2, "0")}`;
+          
+          return {
+            ...acc,
+            [dateKey]: [...(acc[dateKey] || []), item.type]
+          };
+        }, {});
+
+        setEventDates(groupedEvents);
+      } catch (err) {
+        console.error("Error fetching calendar data:", err);
+      }
+    };
+
+    fetchCalendarData();
+  }, [currentDate]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -111,7 +133,7 @@ export default function CalendarPage() {
             className="px-5 py-2 rounded-lg border border-[#877575] bg-white text-black font-medium transition duration-200 ease-in-out hover:bg-gray-100 hover:shadow ml-auto"
           >
             Month
-         </button>
+          </button>
 
           {showDropdown && (
             <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow z-10 w-40">
@@ -236,22 +258,6 @@ export default function CalendarPage() {
             </button>
 
             {/* Tabs */}
-            {/* <div className="flex justify-around mb-4 border-b">
-              {["Task", "Event", "Schedule"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-2 px-4 font-medium ${
-                    activeTab === tab ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div> */}
-
-            {/* Tab Content */}
-            {/* Tabs */}
             <div className="flex justify-around mb-4 shadow-md">
               {tabs.map((tab) => (
                 <button
@@ -269,7 +275,6 @@ export default function CalendarPage() {
             <div className="space-y-3">
               {tabs.find((tab) => tab.key === activeTab)?.content}
             </div>
-
           </div>
         </div>
       )}

@@ -1,356 +1,178 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { FiSearch, FiCalendar } from "react-icons/fi";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  FiSearch, FiCalendar, FiFilter, FiDownload,
+  FiRefreshCw, FiAlertCircle, FiUser, FiClock,
+  FiChevronDown, FiX, FiCheck
+} from "react-icons/fi";
+import axios from "axios";
+import debounce from "lodash/debounce";
+import * as XLSX from 'xlsx';
 
 export default function ViewTimesheet() {
-  const dummyTimesheetData = [
-    {
-      date: "2025-05-11",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Make timesheet page ,Make timesheet page,Make timesheet page,Make timesheet page,Make timesheet page ",
-          time: "09:00 AM to 10:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Design UI ,Design U ,Design U , Design U , Design U ,Design U",
-          time: "10:00 AM to 11:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Write components",
-          time: "11:00 AM to 12:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "API integration",
-          time: "12:00 PM to 01:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "Team meeting",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Fix bugs",
-          time: "02:00 PM to 03:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Miscellaneous",
-          task: "Code cleanup",
-          time: "03:00 PM to 04:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Write documentation",
-          time: "04:00 PM to 05:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    {
-      date: "2025-05-12",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Dashboard setup",
-          time: "09:00 AM to 10:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Form validation",
-          time: "10:00 AM to 11:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "Call with Prashant",
-          time: "11:00 AM to 12:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Handle routing",
-          time: "12:00 PM to 01:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Miscellaneous",
-          task: "Testing",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Deploy to staging",
-          time: "02:00 PM to 03:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Backend sync",
-          time: "03:00 PM to 04:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Git commits",
-          time: "04:00 PM to 05:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    {
-      date: "2025-05-13",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Login UI design",
-          time: "09:00 AM to 10:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Auth logic",
-          time: "10:00 AM to 11:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "Daily standup",
-          time: "11:00 AM to 12:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Write reducers",
-          time: "12:00 PM to 01:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Miscellaneous",
-          task: "Update changelog",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Integrate socket.io",
-          time: "02:00 PM to 03:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Add loading states",
-          time: "03:00 PM to 04:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Optimize images",
-          time: "04:00 PM to 05:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    {
-      date: "2025-05-14",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Fix UI bugs",
-          time: "09:00 AM to 10:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Improve responsiveness",
-          time: "10:00 AM to 11:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Test on mobile",
-          time: "11:00 AM to 12:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Light/dark mode",
-          time: "12:00 PM to 01:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "Review session",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Miscellaneous",
-          task: "Sync with backend",
-          time: "02:00 PM to 03:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "User feedback fixes",
-          time: "03:00 PM to 04:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Write test cases",
-          time: "04:00 PM to 05:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    {
-      date: "2025-05-15",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Work on charts",
-          time: "09:00 AM to 10:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Add pagination",
-          time: "10:00 AM to 11:00 AM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Fix typos",
-          time: "11:00 AM to 12:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "Client feedback call",
-          time: "12:00 PM to 01:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Miscellaneous",
-          task: "Git merge & cleanup",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Export PDF reports",
-          time: "02:00 PM to 03:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Setup analytics",
-          time: "03:00 PM to 04:00 PM",
-          duration: "01:00",
-        },
-        {
-          bucket: "Project",
-          task: "Review pull requests",
-          time: "04:00 PM to 05:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    // Add more data for April
-    {
-      date: "2025-04-28",
-      entries: [
-        {
-          bucket: "Project",
-          task: "April task 1",
-          time: "09:00 AM to 11:00 AM",
-          duration: "02:00",
-        },
-        {
-          bucket: "Meeting",
-          task: "April meeting",
-          time: "01:00 PM to 02:00 PM",
-          duration: "01:00",
-        },
-      ],
-    },
-    // Add data for different years
-    {
-      date: "2024-05-15",
-      entries: [
-        {
-          bucket: "Project",
-          task: "Last year task",
-          time: "09:00 AM to 01:00 PM",
-          duration: "04:00",
-        },
-      ],
-    },
-  ];
-
+  // Primary state
   const [currentView, setCurrentView] = useState("day");
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [timesheetData, setTimesheetData] = useState([]);
+  const [filteredTimesheetData, setFilteredTimesheetData] = useState([]);
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-  const [useSingleDayFilter, setUseSingleDayFilter] = useState(true);
+  // Filter states
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isEmployeeListOpen, setIsEmployeeListOpen] = useState(false);
+  const [filterBuckets, setFilterBuckets] = useState([]);
+  const [selectedBuckets, setSelectedBuckets] = useState([]);
 
-  const [selectedName, setSelectedName] = useState("Chinmay Gawade");
-  const [nameSearch, setNameSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-
+  // Date states
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(
     today.toISOString().split("T")[0]
   );
-  const [filteredTimesheetData, setFilteredTimesheetData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [dateRange, setDateRange] = useState({ firstDay: "", lastDay: "" });
 
-  const nameOptions = [
-    "Chinmay Gawade",
-    "John Smith",
-    "Sarah Johnson",
-    "Alex Chen",
-  ];
+  // Employee data states
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [employeePage, setEmployeePage] = useState(1);
+  const [hasMoreEmployees, setHasMoreEmployees] = useState(true);
+  const employeeListRef = useRef(null);
 
-  const filteredNames = nameOptions.filter((name) =>
-    name.toLowerCase().includes(nameSearch.toLowerCase())
-  );
-
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
+  // Domain refs
   const viewDropdownRef = useRef(null);
-  // Generate years (from 2020 to current year + 5)
+  const filterDropdownRef = useRef(null);
+  const employeeDropdownRef = useRef(null);
+
+  // Constants
+  const EMPLOYEES_PER_PAGE = 20;
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
   const currentYear = new Date().getFullYear();
   const years = Array.from(
     { length: currentYear - 2020 + 6 },
     (_, i) => 2020 + i
   );
+
+  // Memoized data processing
+  const uniqueEmployees = useMemo(() => {
+    if (!timesheetData.length) return [];
+    const employeeMap = new Map();
+    timesheetData.forEach(timesheet => {
+      const userId = timesheet.userId._id;
+      if (!employeeMap.has(userId)) {
+        employeeMap.set(userId, {
+          id: userId,
+          name: `${timesheet.userId.firstName} ${timesheet.userId.lastName}`,
+          firstName: timesheet.userId.firstName,
+          lastName: timesheet.userId.lastName,
+          position: timesheet.userId.position || 'Employee',
+          email: timesheet.userId.email
+        });
+      }
+    });
+    return Array.from(employeeMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }, [timesheetData]);
+
+  // Employee filtering logic
+  const filterEmployees = useCallback((query) => {
+    const lowercaseQuery = query.toLowerCase();
+    return employees.filter(employee =>
+      employee.name.toLowerCase().includes(lowercaseQuery) ||
+      employee.email.toLowerCase().includes(lowercaseQuery)
+    );
+  }, [employees]);
+
+  // Update filtered employees
+  useEffect(() => {
+    if (employees.length > 0) {
+      const filtered = filterEmployees(employeeSearchQuery);
+      setFilteredEmployees(filtered.slice(0, EMPLOYEES_PER_PAGE * employeePage));
+      setHasMoreEmployees(filtered.length > EMPLOYEES_PER_PAGE * employeePage);
+    }
+  }, [employeeSearchQuery, employees, employeePage, filterEmployees]);
+
+  // Initialize employees
+  useEffect(() => {
+    if (uniqueEmployees.length > 0) {
+      setEmployees(uniqueEmployees);
+      if (selectedEmployee) {
+        const freshEmployee = uniqueEmployees.find(e => e.id === selectedEmployee.id);
+        setSelectedEmployee(freshEmployee || uniqueEmployees[0]);
+      } else {
+        setSelectedEmployee(uniqueEmployees[0]);
+      }
+    }
+  }, [uniqueEmployees]);
+
+  // Fetch timesheets
+  const fetchTimesheets = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/timesheet/admin/timesheets`,
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        setTimesheetData(response.data.data);
+        const buckets = [...new Set(
+          response.data.data.flatMap(sheet =>
+            sheet.items.map(item => item.bucket)
+          )
+        )];
+        setFilterBuckets(buckets);
+        updateFilteredData(response.data.data);
+      }
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || "Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTimesheets();
+  }, []);
+
+  // Event listeners for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (viewDropdownRef.current && !viewDropdownRef.current.contains(event.target)) {
+        setIsViewOpen(false);
+      }
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+      if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
+        setIsEmployeeListOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Search handlers
+  const handleEmployeeSearch = (query) => {
+    setEmployeeSearchQuery(query);
+    setEmployeePage(1);
+  };
+
+  // Scroll handler
+  const handleEmployeeListScroll = () => {
+    if (!employeeListRef.current || !hasMoreEmployees) return;
+    const { scrollTop, scrollHeight, clientHeight } = employeeListRef.current;
+    if (scrollTop + clientHeight >= scrollHeight - 20) {
+      setEmployeePage(prev => prev + 1);
+    }
+  };
 
   // Helper function to get the first and last day of the week for a given date
   const getWeekRange = (date) => {
@@ -393,84 +215,102 @@ export default function ViewTimesheet() {
     };
   };
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        viewDropdownRef.current &&
-        !viewDropdownRef.current.contains(event.target)
-      ) {
-        setIsViewOpen(false);
+  // Format timesheet data for display
+  const formatTimesheetData = (apiData) => {
+    if (!selectedEmployee) return [];
+
+    // Group entries by date
+    const entriesByDate = {};
+
+    apiData.forEach(timesheet => {
+      // Only process entries for the selected employee
+      if (timesheet.userId._id === selectedEmployee.id) {
+        // Use the timesheet date as the base date
+        const date = timesheet.date;
+
+        if (!entriesByDate[date]) {
+          entriesByDate[date] = {
+            date,
+            entries: []
+          };
+        }
+
+        // Process each timesheet item
+        timesheet.items.forEach(item => {
+          // Skip if bucket is filtered out
+          if (selectedBuckets.length > 0 && !selectedBuckets.includes(item.bucket)) {
+            return;
+          }
+
+          entriesByDate[date].entries.push({
+            bucket: item.bucket || "Uncategorized",
+            task: item.task,
+            time: item.timeRange,
+            duration: item.duration,
+            type: item.type,
+            userId: timesheet.userId._id,
+            userName: `${timesheet.userId.firstName} ${timesheet.userId.lastName}`,
+            projectName: timesheet.projectName
+          });
+        });
+
+        // Remove dates with no entries after filtering
+        if (entriesByDate[date].entries.length === 0) {
+          delete entriesByDate[date];
+        }
       }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-  // Update date ranges when view changes
-  useEffect(() => {
-    const today = new Date();
-    let dateRange = {};
-
-    if (currentView === "day") {
-      // Use the selected date for day view
-      setSelectedDate(today.toISOString().split("T")[0]);
-      // For day view, filter to only show the selected date
-      const filtered = dummyTimesheetData.filter(
-        (item) => item.date === today.toISOString().split("T")[0]
-      );
-      setFilteredTimesheetData(filtered);
-      return;
-    } else if (currentView === "week") {
-      // Just use the current date for week view
-      setSelectedDate(today.toISOString().split("T")[0]);
-      dateRange = getWeekRange(today.toISOString().split("T")[0]);
-    } else if (currentView === "month") {
-      // Use current month and year
-      setSelectedMonth(today.getMonth() + 1);
-      setSelectedYear(today.getFullYear());
-      dateRange = getMonthRange(today.getFullYear(), today.getMonth() + 1);
-    } else if (currentView === "year") {
-      // Use current year
-      setSelectedYear(today.getFullYear());
-      dateRange = getYearRange(today.getFullYear());
-    }
-
-    const filtered = dummyTimesheetData.filter((item) => {
-      return item.date >= dateRange.firstDay && item.date <= dateRange.lastDay;
     });
 
-    setFilteredTimesheetData(filtered);
-  }, [currentView]);
+    // Convert to array and sort by date (newest first)
+    return Object.values(entriesByDate).sort((a, b) =>
+      new Date(b.date) - new Date(a.date)
+    );
+  };
 
-  // Update filtered data when date selections change
-  useEffect(() => {
+  // Update filtered data based on current view and filters
+  const updateFilteredData = (data = timesheetData) => {
+    let newDateRange = {};
+
     if (currentView === "day") {
       // For day view, only show the selected date
-      const filtered = dummyTimesheetData.filter(
-        (item) => item.date === selectedDate
-      );
-      setFilteredTimesheetData(filtered);
-      return;
-    }
-
-    let dateRange = {};
-
-    if (currentView === "week") {
-      dateRange = getWeekRange(selectedDate);
+      newDateRange = {
+        firstDay: selectedDate,
+        lastDay: selectedDate
+      };
+    } else if (currentView === "week") {
+      newDateRange = getWeekRange(selectedDate);
     } else if (currentView === "month") {
-      dateRange = getMonthRange(selectedYear, selectedMonth);
+      newDateRange = getMonthRange(selectedYear, selectedMonth);
     } else if (currentView === "year") {
-      dateRange = getYearRange(selectedYear);
+      newDateRange = getYearRange(selectedYear);
     }
 
-    const filtered = dummyTimesheetData.filter((item) => {
-      return item.date >= dateRange.firstDay && item.date <= dateRange.lastDay;
+    setDateRange(newDateRange);
+
+    // Format and filter the data
+    const formattedData = formatTimesheetData(data);
+
+    // Filter by date range
+    const filtered = formattedData.filter(item => {
+      return item.date >= newDateRange.firstDay && item.date <= newDateRange.lastDay;
     });
 
     setFilteredTimesheetData(filtered);
-  }, [selectedDate, selectedMonth, selectedYear, currentView]);
+  };
+
+  // Update filtered data when relevant state changes
+  useEffect(() => {
+    updateFilteredData();
+  }, [selectedDate, selectedMonth, selectedYear, currentView, selectedBuckets, selectedEmployee]);
+
+  // Handle filter changes
+  const toggleBucketFilter = (bucket) => {
+    if (selectedBuckets.includes(bucket)) {
+      setSelectedBuckets(selectedBuckets.filter(b => b !== bucket));
+    } else {
+      setSelectedBuckets([...selectedBuckets, bucket]);
+    }
+  };
 
   // Total Duration Calculation
   function calculateTotalDuration(entries) {
@@ -514,50 +354,198 @@ export default function ViewTimesheet() {
     });
   };
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
-        {/* Left side filters grouped here */}
-        <div className="flex flex-wrap gap-14 items-center">
+  // Handle exporting data
+  const handleExport = async () => {
+    if (filteredTimesheetData.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Transform data to Excel-friendly format
+      const rows = [];
+
+      // Create header row
+      const header = [
+        "Date",
+        "Bucket",
+        "Task",
+        "Start Time",
+        "End Time",
+        "Duration",
+        "Employee",
+        "Position",
+        "Project"
+      ];
+      rows.push(header);
+
+      // Process each timesheet entry
+      filteredTimesheetData.forEach(day => {
+        day.entries.forEach(entry => {
+          const [startTime, endTime] = entry.time.split(" - ");
+
+          rows.push([
+            day.date,
+            entry.bucket,
+            entry.task,
+            startTime,
+            endTime,
+            entry.duration,
+            entry.userName,
+            selectedEmployee?.position || "N/A",
+            entry.projectName || "N/A"
+          ]);
+        });
+      });
+
+      // Create worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheet");
+
+      // Generate file
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array"
+      });
+
+      // Create blob and download
+      const data = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Generate filename
+      const dateRange = currentView === 'day'
+        ? selectedDate
+        : `${dateRange.firstDay}_to_${dateRange.lastDay}`;
+
+      link.download = `Timesheet_${selectedEmployee?.name}_${dateRange}.xlsx`;
+      link.click();
+
+      // Cleanup
+      URL.revokeObjectURL(url);
+      setIsLoading(false);
+
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      setErrorMessage("Failed to export data");
+      setIsLoading(false);
+    }
+  };
+ return (
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto">
+      {/* Employee Selector */}
+      <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+        <div className="mb-4 relative" ref={employeeDropdownRef}>
+          <div className="text-sm text-gray-500 mb-1 font-medium">Employee</div>
+          <div
+            onClick={() => setIsEmployeeListOpen(!isEmployeeListOpen)}
+            className="flex items-center justify-between p-2 border border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 transition-colors"
+          >
+            <div className="flex items-center">
+              <div className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                {selectedEmployee ? selectedEmployee.firstName[0] + selectedEmployee.lastName[0] : "?"}
+              </div>
+              <div>
+                <div className="font-medium">{selectedEmployee?.name || "Select Employee"}</div>
+                <div className="text-xs text-gray-500">{selectedEmployee?.position}</div>
+              </div>
+            </div>
+            <FiChevronDown className={`transition-transform ${isEmployeeListOpen ? "rotate-180" : ""}`} />
+          </div>
+
+          {isEmployeeListOpen && (
+            <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+              <div className="p-2 border-b border-gray-200">
+                <div className="relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={employeeSearchQuery}
+                    onChange={(e) => handleEmployeeSearch(e.target.value)}
+                    placeholder="Search employees..."
+                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md"
+                  />
+                  {employeeSearchQuery && (
+                    <button
+                      onClick={() => handleEmployeeSearch("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <FiX />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className="max-h-60 overflow-y-auto"
+                ref={employeeListRef}
+                onScroll={handleEmployeeListScroll}
+              >
+                {filteredEmployees.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className={`flex items-center p-2 hover:bg-blue-50 cursor-pointer ${selectedEmployee?.id === employee.id ? "bg-blue-50" : ""}`}
+                    onClick={() => {
+                      setSelectedEmployee(employee);
+                      setIsEmployeeListOpen(false);
+                    }}
+                  >
+                    <div className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                      {employee.firstName[0] + employee.lastName[0]}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{employee.name}</div>
+                      <div className="text-xs text-gray-500">{employee.position}</div>
+                    </div>
+                    {selectedEmployee?.id === employee.id && <FiCheck className="text-blue-600" />}
+                  </div>
+                ))}
+                {filteredEmployees.length === 0 && (
+                  <div className="p-4 text-center text-gray-500">No employees found</div>
+                )}
+                {hasMoreEmployees && (
+                  <div className="p-2 text-center text-gray-500 text-sm">Scroll to load more</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* View selector */}
           <div className="flex flex-col relative" ref={viewDropdownRef}>
             <button
               onClick={() => setIsViewOpen(!isViewOpen)}
-              className={`border border-gray-300 px-3 py-2 bg-white flex justify-between items-center min-w-32 ${
-                isViewOpen ? "rounded-t-md" : "rounded-md"
-              }`}
+              className={`border border-gray-300 px-3 py-2 bg-white flex justify-between items-center min-w-32 rounded-md hover:border-blue-400 transition-colors`}
             >
-              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
-              <svg
-                className={`ml-2 w-4 h-4 transition-transform ${
-                  isViewOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                ></path>
-              </svg>
+              <FiCalendar className="mr-2 text-gray-600" />
+              {currentView.charAt(0).toUpperCase() + currentView.slice(1)} View
+              <FiChevronDown className={`ml-2 transition-transform ${isViewOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isViewOpen && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-300 border-t-0 z-10">
+              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md z-10">
                 {["day", "week", "month", "year"].map((view) => (
                   <div
                     key={view}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
+                    className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${currentView === view ? "bg-blue-50 text-blue-600" : ""
+                      }`}
                     onClick={() => {
                       setCurrentView(view);
-                      setUseSingleDayFilter(view === "day");
                       setIsViewOpen(false);
                     }}
                   >
+                    {currentView === view && <FiCheck className="mr-2" />}
                     {view.charAt(0).toUpperCase() + view.slice(1)}
                   </div>
                 ))}
@@ -565,13 +553,14 @@ export default function ViewTimesheet() {
             )}
           </div>
 
+          {/* Date selectors */}
           {(currentView === "day" || currentView === "week") && (
-            <div className="flex flex-col">
+            <div className="flex items-center">
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2"
+                className="border border-gray-300 rounded-md px-3 py-2 hover:border-blue-400 transition-colors"
               />
             </div>
           )}
@@ -582,7 +571,7 @@ export default function ViewTimesheet() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8 hover:border-blue-400 transition-colors"
                 >
                   {months.map((month, index) => (
                     <option key={month} value={index + 1} className="bg-white">
@@ -591,20 +580,7 @@ export default function ViewTimesheet() {
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
+                  <FiChevronDown className="w-4 h-4" />
                 </div>
               </div>
 
@@ -612,7 +588,7 @@ export default function ViewTimesheet() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+                  className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8 hover:border-blue-400 transition-colors"
                 >
                   {years.map((year) => (
                     <option key={year} value={year} className="bg-white">
@@ -621,20 +597,7 @@ export default function ViewTimesheet() {
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
+                  <FiChevronDown className="w-4 h-4" />
                 </div>
               </div>
             </div>
@@ -645,7 +608,7 @@ export default function ViewTimesheet() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8"
+                className="border border-gray-300 rounded-md px-3 py-2 appearance-none pr-8 hover:border-blue-400 transition-colors"
               >
                 {years.map((year) => (
                   <option key={year} value={year} className="bg-white">
@@ -654,190 +617,238 @@ export default function ViewTimesheet() {
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  ></path>
-                </svg>
+                <FiChevronDown className="w-4 h-4" />
               </div>
             </div>
           )}
-        </div>
-        {currentView === "year" && (
-          <div className="flex flex-col">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-md px-3 py-2"
+
+          {/* Filter dropdown */}
+          <div className="relative" ref={filterDropdownRef}>
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:border-blue-400 transition-colors ${selectedBuckets.length > 0 ? "border-blue-400 text-blue-600" : ""
+                }`}
             >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+              <FiFilter className={selectedBuckets.length > 0 ? "text-blue-600" : "text-gray-600"} />
+              <span>
+                {selectedBuckets.length > 0
+                  ? `Filters (${selectedBuckets.length})`
+                  : "Filters"}
+              </span>
+            </button>
 
-        {/* Right side search bar */}
-        <div className="relative w-90">
-          <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-gray-400">
-            <FiSearch className="w-5 h-5" />
+            {isFilterOpen && (
+              <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-300 rounded-md shadow-md z-10">
+                <div className="p-3 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="font-medium">Bucket Types</h3>
+                  <button
+                    onClick={() => setSelectedBuckets([])}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                    disabled={selectedBuckets.length === 0}
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div className="p-3 max-h-60 overflow-y-auto">
+                  {filterBuckets.length > 0 ? (
+                    filterBuckets.map((bucket) => (
+                      <div key={bucket} className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          id={`bucket-${bucket}`}
+                          checked={selectedBuckets.includes(bucket)}
+                          onChange={() => toggleBucketFilter(bucket)}
+                          className="mr-2 w-4 h-4 accent-blue-600"
+                        />
+                        <label
+                          htmlFor={`bucket-${bucket}`}
+                          className="cursor-pointer flex-1"
+                        >
+                          {bucket}
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No bucket types found</p>
+                  )}
+                </div>
+                <div className="p-3 border-t border-gray-200 flex justify-end">
+                  <button
+                    onClick={() => setIsFilterOpen(false)}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <input
-            type="text"
-            value={nameSearch}
-            onChange={(e) => {
-              setNameSearch(e.target.value);
-              setShowDropdown(true);
-            }}
-            placeholder="Enter name"
-            className="border border-gray-300 rounded-full pl-14 pr-3 py-2 w-full"
-          />
-          {showDropdown && filteredNames.length > 0 && (
-            <ul className="absolute z-10 w-full max-h-40 overflow-auto border border-gray-300 rounded-md bg-white mt-1">
-              {filteredNames.map((name) => (
-                <li
-                  key={name}
-                  onClick={() => {
-                    setSelectedName(name);
-                    setNameSearch(name);
-                    setShowDropdown(false);
-                  }}
-                  className="px-3 py-2 cursor-pointer hover:bg-blue-100"
-                >
-                  {name}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
 
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#018ABE]">
-          {selectedName}'s Timesheet -{" "}
-          {currentView.charAt(0).toUpperCase() + currentView.slice(1)} View
-        </h2>
-        {currentView === "day" && (
+      {/* Header with actions */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-[#018ABE]">
+            {selectedEmployee ? `${selectedEmployee.name}'s Timesheet` : "Timesheet"}
+          </h2>
           <p className="text-gray-600">
-            {selectedDate ? formatDate(selectedDate) : "Select a date"}
+            {currentView === "day" && (selectedDate ? formatDate(selectedDate) : "Select a date")}
+            {currentView === "week" && (
+              <>Week of {dateRange.firstDay ? formatDate(dateRange.firstDay) : "--"} to{" "}
+                {dateRange.lastDay ? formatDate(dateRange.lastDay) : "--"}</>
+            )}
+            {currentView === "month" && <>{months[selectedMonth - 1]} {selectedYear}</>}
+            {currentView === "year" && <>Year {selectedYear}</>}
           </p>
-        )}
-        {currentView === "week" && (
-          <p className="text-gray-600">
-            Week of {getWeekRange(selectedDate).firstDay} to{" "}
-            {getWeekRange(selectedDate).lastDay}
-          </p>
-        )}
-        {currentView === "month" && (
-          <p className="text-gray-600">
-            {months[selectedMonth - 1]} {selectedYear}
-          </p>
-        )}
-        {currentView === "year" && (
-          <p className="text-gray-600">Year {selectedYear}</p>
-        )}
+        </div>
+
+        <div className="flex gap-2">
+          {/* Refresh button */}
+          <button
+            onClick={fetchTimesheets}
+            className="border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:bg-gray-50"
+            disabled={isLoading}
+          >
+            <FiRefreshCw className={`text-gray-600 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Refresh'}</span>
+          </button>
+
+          {/* Export button */}
+          <button
+            onClick={handleExport}
+            className="border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || filteredTimesheetData.length === 0}
+          >
+            {isLoading ? (
+              <FiRefreshCw className="animate-spin text-gray-600" />
+            ) : (
+              <FiDownload className="text-gray-600" />
+            )}
+            <span className="hidden sm:inline">
+              {isLoading ? 'Exporting...' : 'Export Excel'}
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Timesheet Tables */}
-      {filteredTimesheetData.length > 0 ? (
-        <>
-          {filteredTimesheetData.map((dayData, dayIndex) => (
-            <div key={dayData.date} className="mb-6">
-              {/* Date heading moved outside of the table */}
-              <h3 className="bg-white p-3 font-medium rounded-t-md">
-                {formatDate(dayData.date)}
-              </h3>
-
-              {/* Header row moved outside the table */}
-              <div className="overflow-x-auto">
-                <div className="flex w-full  bg-[#018ABE] text-white font-semibold p-2 rounded-t-md">
-                  <div className="text-center  w-[12%]  ">Bucket</div>
-                  <div className="text-left px-20  w-[60%] border-l border-white">
-                    Task
-                  </div>
-                  <div className="text-center  w-[20%] border-l border-white ">
-                    Time
-                  </div>
-                  <div className="text-center w-[8%] border-l border-white ">
-                    Duration
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-b-md overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <tbody>
-                      {dayData.entries.map((entry, index) => (
-                        <tr key={index} className="bg-white">
-                          <td className="px-4 w-[10%] py-3 text-center">
-                            {entry.bucket}
-                          </td>
-                          <td className="px-4 py-3 w-[56%] pl-10 relative text-left">
-                            <span className="custom-border-left"></span>{" "}
-                            {entry.task}
-                          </td>
-                          <td className="px-4 py-3 w-[19%] relative text-center">
-                            <span className="custom-border-left"></span>
-                            {entry.time}
-                          </td>
-                          <td className="px-4 py-3 w-[8%] relative text-center">
-                            <span className="custom-border-left"></span>
-                            {entry.duration}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="bg-[#018ABE] text-white">
-                        <td
-                          colSpan={3}
-                          className="py-2 text-right px-27 font-semibold"
-                        >
-                          Day Total
-                        </td>
-                        <td className="px-4 py-2 border-l border-gray-100 text-center font-semibold">
-                          {calculateTotalDuration(dayData.entries)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div className="bg-gray-100 p-4 rounded-md shadow-sm">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-lg">Grand Total</span>
-              <span className="font-bold text-lg text-[#018ABE]">
-                {calculateGrandTotal()}
-              </span>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+      {/* Error message */}
+      {errorMessage && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-r-md animate-fadeIn">
           <div className="flex">
             <div className="flex-shrink-0">
-              <FiCalendar className="h-5 w-5 text-yellow-400" />
+              <FiAlertCircle className="h-5 w-5 text-red-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                No timesheet data found for the selected {currentView}.
+              <p className="text-sm text-red-700">
+                {errorMessage}
               </p>
             </div>
+            <button
+              className="ml-auto text-red-400 hover:text-red-600"
+              onClick={() => setErrorMessage("")}
+            >
+              <FiX />
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#018ABE]"></div>
+        </div>
+      ) : (
+        /* Main Content */
+        <div className="space-y-6">
+          {filteredTimesheetData.length > 0 ? (
+            <>
+              {/* Timesheet Entries */}
+              {filteredTimesheetData.map((dayData) => (
+                <div key={dayData.date} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  {/* Date Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b border-gray-200">
+                    <h3 className="font-medium text-gray-700 mb-2 sm:mb-0">
+                      {formatDate(dayData.date)}
+                    </h3>
+                    <div className="bg-blue-50 px-3 py-1 rounded-full text-sm font-medium text-[#018ABE]">
+                      Total: {calculateTotalDuration(dayData.entries)}
+                    </div>
+                  </div>
+
+                  {/* Entries Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[120px]">
+                            Bucket
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                            Task
+                          </th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 min-w-[100px]">
+                            Time
+                          </th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 min-w-[80px]">
+                            Duration
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayData.entries.map((entry, index) => (
+                          <tr
+                            key={index}
+                            className={`border-t border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                              }`}
+                          >
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {entry.bucket}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700">
+                              {entry.task}
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-700">
+                              {entry.time}
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm font-medium text-gray-900">
+                              {entry.duration}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+
+              {/* Grand Total */}
+              <div className="bg-[#018ABE] p-4 rounded-lg shadow-sm text-white">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-lg">Grand Total</span>
+                  <span className="font-bold text-xl">
+                    {calculateGrandTotal()}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* No Data State */
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-md">
+              <div className="flex items-center">
+                <FiAlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
+                <div>
+                  <p className="text-sm text-yellow-700">
+                    No timesheet entries found for the selected period and filters.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
