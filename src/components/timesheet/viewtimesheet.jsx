@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { 
-  FiSearch, FiCalendar, FiFilter, FiDownload, 
+import {
+  FiSearch, FiCalendar, FiFilter, FiDownload,
   FiRefreshCw, FiAlertCircle, FiUser, FiClock,
   FiChevronDown, FiX, FiCheck
 } from "react-icons/fi";
 import axios from "axios";
 import debounce from "lodash/debounce";
+import * as XLSX from 'xlsx';
 
 export default function ViewTimesheet() {
   // Primary state
@@ -17,14 +18,14 @@ export default function ViewTimesheet() {
   const [filteredTimesheetData, setFilteredTimesheetData] = useState([]);
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  
+
   // Filter states
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isEmployeeListOpen, setIsEmployeeListOpen] = useState(false);
   const [filterBuckets, setFilterBuckets] = useState([]);
   const [selectedBuckets, setSelectedBuckets] = useState([]);
-  
+
   // Date states
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(
@@ -33,14 +34,14 @@ export default function ViewTimesheet() {
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [dateRange, setDateRange] = useState({ firstDay: "", lastDay: "" });
-  
+
   // Employee data states
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [employeePage, setEmployeePage] = useState(1);
   const [hasMoreEmployees, setHasMoreEmployees] = useState(true);
   const employeeListRef = useRef(null);
-  
+
   // Domain refs
   const viewDropdownRef = useRef(null);
   const filterDropdownRef = useRef(null);
@@ -61,10 +62,10 @@ export default function ViewTimesheet() {
   // Memoized data processing
   const uniqueEmployees = useMemo(() => {
     if (!timesheetData.length) return [];
-    
+
     // Extract unique employees from timesheet data
     const employeeMap = new Map();
-    
+
     timesheetData.forEach(timesheet => {
       const userId = timesheet.userId._id;
       if (!employeeMap.has(userId)) {
@@ -78,8 +79,8 @@ export default function ViewTimesheet() {
         });
       }
     });
-    
-    return Array.from(employeeMap.values()).sort((a, b) => 
+
+    return Array.from(employeeMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name)
     );
   }, [timesheetData]);
@@ -92,7 +93,7 @@ export default function ViewTimesheet() {
       setSelectedEmployee(uniqueEmployees[0]);
     } else if (uniqueEmployees.length > 0) {
       setEmployees(uniqueEmployees);
-      
+
       // Filter employees based on search
       handleEmployeeSearch(employeeSearchQuery);
     }
@@ -111,16 +112,16 @@ export default function ViewTimesheet() {
 
       if (response.data.success) {
         setTimesheetData(response.data.data);
-        
+
         // Extract unique bucket types
         const buckets = [...new Set(
-          response.data.data.flatMap(sheet => 
+          response.data.data.flatMap(sheet =>
             sheet.items.map(item => item.bucket)
           )
         )];
-        
+
         setFilterBuckets(buckets);
-        
+
         // Format and filter the data
         updateFilteredData(response.data.data);
       } else {
@@ -149,7 +150,7 @@ export default function ViewTimesheet() {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
         setIsFilterOpen(false);
       }
-      
+
       if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
         setIsEmployeeListOpen(false);
       }
@@ -170,13 +171,13 @@ export default function ViewTimesheet() {
         setHasMoreEmployees(employees.length > EMPLOYEES_PER_PAGE);
         return;
       }
-      
+
       const lowercaseQuery = query.toLowerCase();
-      const filtered = employees.filter(employee => 
+      const filtered = employees.filter(employee =>
         employee.name.toLowerCase().includes(lowercaseQuery) ||
         employee.email.toLowerCase().includes(lowercaseQuery)
       );
-      
+
       setFilteredEmployees(filtered.slice(0, EMPLOYEES_PER_PAGE));
       setEmployeePage(1);
       setHasMoreEmployees(filtered.length > EMPLOYEES_PER_PAGE);
@@ -192,14 +193,14 @@ export default function ViewTimesheet() {
   // Load more employees when scrolling
   const handleEmployeeListScroll = () => {
     if (!employeeListRef.current || !hasMoreEmployees) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = employeeListRef.current;
-    
+
     // When user scrolls to bottom, load more employees
     if (scrollTop + clientHeight >= scrollHeight - 20) {
       const nextPage = employeePage + 1;
       const startIdx = (nextPage - 1) * EMPLOYEES_PER_PAGE;
-      
+
       let filteredResults;
       if (employeeSearchQuery.trim()) {
         const lowercaseQuery = employeeSearchQuery.toLowerCase();
@@ -210,7 +211,7 @@ export default function ViewTimesheet() {
       } else {
         filteredResults = employees.slice(0, startIdx + EMPLOYEES_PER_PAGE);
       }
-      
+
       setFilteredEmployees(filteredResults);
       setEmployeePage(nextPage);
       setHasMoreEmployees(filteredResults.length < employees.length);
@@ -261,7 +262,7 @@ export default function ViewTimesheet() {
   // Format timesheet data for display
   const formatTimesheetData = (apiData) => {
     if (!selectedEmployee) return [];
-    
+
     // Group entries by date
     const entriesByDate = {};
 
@@ -270,21 +271,21 @@ export default function ViewTimesheet() {
       if (timesheet.userId._id === selectedEmployee.id) {
         // Use the timesheet date as the base date
         const date = timesheet.date;
-        
+
         if (!entriesByDate[date]) {
           entriesByDate[date] = {
             date,
             entries: []
           };
         }
-        
+
         // Process each timesheet item
         timesheet.items.forEach(item => {
           // Skip if bucket is filtered out
           if (selectedBuckets.length > 0 && !selectedBuckets.includes(item.bucket)) {
             return;
           }
-          
+
           entriesByDate[date].entries.push({
             bucket: item.bucket || "Uncategorized",
             task: item.task,
@@ -296,7 +297,7 @@ export default function ViewTimesheet() {
             projectName: timesheet.projectName
           });
         });
-        
+
         // Remove dates with no entries after filtering
         if (entriesByDate[date].entries.length === 0) {
           delete entriesByDate[date];
@@ -305,7 +306,7 @@ export default function ViewTimesheet() {
     });
 
     // Convert to array and sort by date (newest first)
-    return Object.values(entriesByDate).sort((a, b) => 
+    return Object.values(entriesByDate).sort((a, b) =>
       new Date(b.date) - new Date(a.date)
     );
   };
@@ -332,7 +333,7 @@ export default function ViewTimesheet() {
 
     // Format and filter the data
     const formattedData = formatTimesheetData(data);
-    
+
     // Filter by date range
     const filtered = formattedData.filter(item => {
       return item.date >= newDateRange.firstDay && item.date <= newDateRange.lastDay;
@@ -403,15 +404,80 @@ export default function ViewTimesheet() {
       alert("No data to export");
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
-      // In a real implementation, you would call an API to generate the export
-      setTimeout(() => {
-        setIsLoading(false);
-        alert("Export functionality would download a CSV or PDF file in production");
-      }, 1000);
+
+      // Transform data to Excel-friendly format
+      const rows = [];
+
+      // Create header row
+      const header = [
+        "Date",
+        "Bucket",
+        "Task",
+        "Start Time",
+        "End Time",
+        "Duration",
+        "Employee",
+        "Position",
+        "Project"
+      ];
+      rows.push(header);
+
+      // Process each timesheet entry
+      filteredTimesheetData.forEach(day => {
+        day.entries.forEach(entry => {
+          const [startTime, endTime] = entry.time.split(" - ");
+
+          rows.push([
+            day.date,
+            entry.bucket,
+            entry.task,
+            startTime,
+            endTime,
+            entry.duration,
+            entry.userName,
+            selectedEmployee?.position || "N/A",
+            entry.projectName || "N/A"
+          ]);
+        });
+      });
+
+      // Create worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheet");
+
+      // Generate file
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array"
+      });
+
+      // Create blob and download
+      const data = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Generate filename
+      const dateRange = currentView === 'day'
+        ? selectedDate
+        : `${dateRange.firstDay}_to_${dateRange.lastDay}`;
+
+      link.download = `Timesheet_${selectedEmployee?.name}_${dateRange}.xlsx`;
+      link.click();
+
+      // Cleanup
+      URL.revokeObjectURL(url);
+      setIsLoading(false);
+
     } catch (error) {
       console.error("Error exporting data:", error);
       setErrorMessage("Failed to export data");
@@ -441,7 +507,7 @@ export default function ViewTimesheet() {
             </div>
             <FiChevronDown className={`transition-transform ${isEmployeeListOpen ? "rotate-180" : ""}`} />
           </div>
-          
+
           {/* Employee dropdown */}
           {isEmployeeListOpen && (
             <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
@@ -465,8 +531,8 @@ export default function ViewTimesheet() {
                   )}
                 </div>
               </div>
-              
-              <div 
+
+              <div
                 className="max-h-60 overflow-y-auto"
                 ref={employeeListRef}
                 onScroll={handleEmployeeListScroll}
@@ -475,9 +541,8 @@ export default function ViewTimesheet() {
                   filteredEmployees.map((employee) => (
                     <div
                       key={employee.id}
-                      className={`flex items-center p-2 hover:bg-blue-50 cursor-pointer ${
-                        selectedEmployee?.id === employee.id ? "bg-blue-50" : ""
-                      }`}
+                      className={`flex items-center p-2 hover:bg-blue-50 cursor-pointer ${selectedEmployee?.id === employee.id ? "bg-blue-50" : ""
+                        }`}
                       onClick={() => {
                         setSelectedEmployee(employee);
                         setIsEmployeeListOpen(false);
@@ -500,7 +565,7 @@ export default function ViewTimesheet() {
                     No employees found
                   </div>
                 )}
-                
+
                 {hasMoreEmployees && (
                   <div className="p-2 text-center text-gray-500 text-sm">
                     Scroll to load more
@@ -510,7 +575,7 @@ export default function ViewTimesheet() {
             </div>
           )}
         </div>
-        
+
         {/* Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* View selector */}
@@ -529,9 +594,8 @@ export default function ViewTimesheet() {
                 {["day", "week", "month", "year"].map((view) => (
                   <div
                     key={view}
-                    className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${
-                      currentView === view ? "bg-blue-50 text-blue-600" : ""
-                    }`}
+                    className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${currentView === view ? "bg-blue-50 text-blue-600" : ""
+                      }`}
                     onClick={() => {
                       setCurrentView(view);
                       setIsViewOpen(false);
@@ -618,14 +682,13 @@ export default function ViewTimesheet() {
           <div className="relative" ref={filterDropdownRef}>
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:border-blue-400 transition-colors ${
-                selectedBuckets.length > 0 ? "border-blue-400 text-blue-600" : ""
-              }`}
+              className={`border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:border-blue-400 transition-colors ${selectedBuckets.length > 0 ? "border-blue-400 text-blue-600" : ""
+                }`}
             >
               <FiFilter className={selectedBuckets.length > 0 ? "text-blue-600" : "text-gray-600"} />
               <span>
-                {selectedBuckets.length > 0 
-                  ? `Filters (${selectedBuckets.length})` 
+                {selectedBuckets.length > 0
+                  ? `Filters (${selectedBuckets.length})`
                   : "Filters"}
               </span>
             </button>
@@ -653,7 +716,7 @@ export default function ViewTimesheet() {
                           onChange={() => toggleBucketFilter(bucket)}
                           className="mr-2 w-4 h-4 accent-blue-600"
                         />
-                        <label 
+                        <label
                           htmlFor={`bucket-${bucket}`}
                           className="cursor-pointer flex-1"
                         >
@@ -689,13 +752,13 @@ export default function ViewTimesheet() {
             {currentView === "day" && (selectedDate ? formatDate(selectedDate) : "Select a date")}
             {currentView === "week" && (
               <>Week of {dateRange.firstDay ? formatDate(dateRange.firstDay) : "--"} to{" "}
-              {dateRange.lastDay ? formatDate(dateRange.lastDay) : "--"}</>
+                {dateRange.lastDay ? formatDate(dateRange.lastDay) : "--"}</>
             )}
             {currentView === "month" && <>{months[selectedMonth - 1]} {selectedYear}</>}
             {currentView === "year" && <>Year {selectedYear}</>}
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           {/* Refresh button */}
           <button
@@ -710,11 +773,17 @@ export default function ViewTimesheet() {
           {/* Export button */}
           <button
             onClick={handleExport}
-            className="border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:bg-gray-50"
+            className="border border-gray-300 rounded-md px-3 py-2 bg-white flex items-center gap-2 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || filteredTimesheetData.length === 0}
           >
-            <FiDownload className="text-gray-600" />
-            <span className="hidden sm:inline">Export</span>
+            {isLoading ? (
+              <FiRefreshCw className="animate-spin text-gray-600" />
+            ) : (
+              <FiDownload className="text-gray-600" />
+            )}
+            <span className="hidden sm:inline">
+              {isLoading ? 'Exporting...' : 'Export Excel'}
+            </span>
           </button>
         </div>
       </div>
@@ -731,7 +800,7 @@ export default function ViewTimesheet() {
                 {errorMessage}
               </p>
             </div>
-            <button 
+            <button
               className="ml-auto text-red-400 hover:text-red-600"
               onClick={() => setErrorMessage("")}
             >
@@ -742,7 +811,7 @@ export default function ViewTimesheet() {
       )}
 
       {/* Loading state */}
-            {/* Loading state */}
+      {/* Loading state */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#018ABE]"></div>
@@ -788,9 +857,8 @@ export default function ViewTimesheet() {
                         {dayData.entries.map((entry, index) => (
                           <tr
                             key={index}
-                            className={`border-t border-gray-100 ${
-                              index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                            }`}
+                            className={`border-t border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                              }`}
                           >
                             <td className="px-4 py-3">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
