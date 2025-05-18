@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { label: "Add Employees", icon: UserPlus, href: "/addemployees" },
+  // { label: "Add Employees", icon: UserPlus, href: "/addemployees" },
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   // { label: "Assign Task", icon: ClipboardCheck, href: "/assigntask" },
   { label: "View Attendance", icon: CalendarDays, href: "/viewattendance" },

@@ -65,7 +65,7 @@ export default function Navbar() {
           title="Post Upload"
         />
 
-        <Link href="/addteammember">
+        <Link href="/addemployees">
           <LuUserRoundPlus className="w-6 h-7 text-black cursor-pointer" />
         </Link>
 
