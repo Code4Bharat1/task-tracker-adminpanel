@@ -138,7 +138,7 @@ function Page() {
                         <Image src="/profile/flagVector.png" alt="Flag Vector" width={49} height={71} className="absolute opacity-50 top-10 left-[33%]" />
                         <Image src="/profile/pencil.png" alt="Vector" width={113} height={147} className="absolute opacity-50 top-6 left-[45%]" />
                         <Image src="/profile/key.png" alt="Key Icon" width={151} height={150} className="absolute opacity-50 bottom-2 left-[35%]" />
-                        <div className="absolute top-16 right-[15%] text-white">
+                        <div className="absolute top-16 right-[5%] text-white">
                             <h1 className="text-4xl font-[700] mb-2">{profile.fullName}</h1>
                             <h2 className="text-3xl font-[400] mb-2">{profile.phone}</h2>
                             <h3 className="text-3xl font-[400] mb-2">{profile.email}</h3>
