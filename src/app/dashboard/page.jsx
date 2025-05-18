@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { RiSurveyLine, RiTaskLine, RiProgress6Line, RiGalleryView } from 'react-icons/ri';
+import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import Sidebar from "@/components/layout/sidebar";
 import NavBar from "@/components/layout/navbar";
@@ -19,14 +21,19 @@ function Page() {
         Total: 0
     });
 
+    const router = useRouter();
+
+    const handleClick = () => {
+        router.push('/assigntask'); // Navigate to the assign task page
+    };
+
     useEffect(() => {
         async function fetchTasks() {
             try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/tasks/getTasks`,
-                    {
-                        withCredentials: true
-                    }
-                );
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/tasks/getTasks`, {
+                    withCredentials: true
+                });
+
                 const tasks = response.data.data;
 
                 const counts = {
@@ -62,15 +69,23 @@ function Page() {
                 <WelcomeBanner total={statusCounts.Total} />
 
                 <div className="flex flex-col w-full mt-3">
-                    <div>
-                        <h1 className="text-3xl font-bold pl-9">
+                    <div className="flex items-center justify-between px-9 mt-4">
+                        <h1 className="text-3xl font-bold">
                             <span className="underline decoration-[#FFCC5D] decoration-3 underline-offset-6">
-                                Dashbo
-                            </span>ard
+                                Dashboard
+                            </span>
                         </h1>
+
+                        {/* Plus Button to Assign Task */}
+                        <button
+                            onClick={handleClick}
+                            className="bg-[#058CBF] rounded-full p-2 text-white shadow-lg cursor-pointer hover:bg-[#5c95a9e4] transition-colors"
+                        >
+                            <Plus size={26} />
+                        </button>
                     </div>
 
-                    <div className="grid grid-cols-2 p-4 items-center justify-items-center w-full gap-y-8">
+                    <div className="grid grid-cols-2 md:gap-4 p-4 items-center justify-items-center w-full gap-y-8">
                         <ProjectStatusCard
                             title="Open Projects"
                             Icon={RiSurveyLine}

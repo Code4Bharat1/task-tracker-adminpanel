@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { IoVideocamOutline } from "react-icons/io5";
 import { LuUserRoundPlus } from "react-icons/lu";
 import { FaRegBell, FaSearch, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { MdSend } from "react-icons/md"; // Post Upload icon
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -24,7 +25,6 @@ export default function Navbar() {
 
   const handleLogout = () => {
     toast.success("Logged out");
-    // Add your logout logic here if needed
     router.push("/");
   };
 
@@ -58,6 +58,13 @@ export default function Navbar() {
 
       {/* Icons */}
       <div className="flex items-center gap-x-10 relative">
+        {/* Post Upload Icon */}
+        <MdSend
+          className="w-6 h-7 text-black cursor-pointer"
+          onClick={() => router.push("/postupload")}
+          title="Post Upload"
+        />
+
         <Link href="/addteammember">
           <LuUserRoundPlus className="w-6 h-7 text-black cursor-pointer" />
         </Link>
@@ -67,6 +74,7 @@ export default function Navbar() {
           onClick={toggleMeetingPopup}
         />
 
+        {/* Notifications */}
         <div className="relative">
           <FaRegBell
             className="w-7 h-7 text-black cursor-pointer"
@@ -95,6 +103,7 @@ export default function Navbar() {
           )}
         </div>
 
+        {/* Profile Menu */}
         <div className="relative">
           <Image
             src="/profile.png"

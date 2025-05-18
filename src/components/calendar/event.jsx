@@ -101,7 +101,7 @@ export default function TaskPage() {
         time: formattedTime
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/user/calendar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData),

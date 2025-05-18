@@ -52,6 +52,7 @@ export default function SchedulePage({ initialDate, closeModal }) {
       const meeting = {
         userId, // Added userId
         type: "Meeting", // Added type
+        category: "Meeting", // Added category
         title,
         description, // Added description
         date: selectedDate,
@@ -63,7 +64,7 @@ export default function SchedulePage({ initialDate, closeModal }) {
       };
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/user/calendar`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

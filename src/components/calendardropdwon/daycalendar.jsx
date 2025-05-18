@@ -8,12 +8,22 @@ const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const categoryColors = {
   "Daily Task": "bg-blue-600",
   Meeting: "bg-red-500",
-  Event: "bg-green-500",
-  Reminder: "bg-purple-500",
+  Event: "bg-violet-500",
+  Reminder: "bg-green-500",
   Deadline: "bg-purple-600",
   Leaves: "bg-yellow-400",
   Other: "bg-orange-400",
 };
+
+const priorityOrder = [
+  "Daily Task",
+  "Meeting",
+  "Reminder",
+  "Deadline",
+  "Leaves",
+  "Event",
+  "Other",
+];
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -22,7 +32,6 @@ export default function Calendar() {
   const underlineRef = useRef(null);
   const userId = "64b81234567890abcdef1234";
 
-  // Set today key
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -30,7 +39,6 @@ export default function Calendar() {
     setTodayKey(key);
   }, []);
 
-  // Fetch calendar data
   useEffect(() => {
     const fetchCalendarData = async () => {
       try {
@@ -44,7 +52,6 @@ export default function Calendar() {
           const dateKey = `${eventDate.getUTCFullYear()}-${String(eventDate.getUTCMonth() + 1).padStart(2, "0")}-${String(eventDate.getUTCDate()).padStart(2, "0")}`;
           
           const eventData = {
-            type: item.type,
             title: item.title,
             description: item.description,
             participants: item.participants || [],
@@ -69,7 +76,6 @@ export default function Calendar() {
     fetchCalendarData();
   }, [currentDate]);
 
-  // Time formatting
   const formatTime = (timeString) => {
     if (!timeString) return "";
     const [hours, minutes] = timeString.includes(" ") 
@@ -81,7 +87,6 @@ export default function Calendar() {
     return `${twelveHour}:${minutes} ${period}`;
   };
 
-  // GSAP animation
   useEffect(() => {
     gsap.fromTo(
       underlineRef.current,
@@ -94,7 +99,6 @@ export default function Calendar() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction));
   };
 
-  // Calendar grid setup
   const month = currentDate.getMonth();
   const year = currentDate.getFullYear();
   const firstDay = new Date(year, month, 1).getDay();
@@ -160,6 +164,26 @@ export default function Calendar() {
             const isSunday = weekday === 0;
             const isToday = dateKey === todayKey;
 
+            // Group events by category
+            const groupedEvents = events.reduce((acc, event) => {
+              acc[event.category] = (acc[event.category] || 0) + 1;
+              return acc;
+            }, {});
+
+            // Sort by priority
+            const sortedEvents = Object.entries(groupedEvents)
+              .map(([category, count]) => ({ category, count }))
+              .sort((a, b) => {
+                const aIndex = priorityOrder.indexOf(a.category);
+                const bIndex = priorityOrder.indexOf(b.category);
+                const aPriority = aIndex === -1 ? Infinity : aIndex;
+                const bPriority = bIndex === -1 ? Infinity : bIndex;
+                return aPriority - bPriority;
+              });
+
+            const displayedEvents = sortedEvents.slice(0, 5);
+            const remainingTypes = Math.max(sortedEvents.length - 5, 0);
+
             let bgClass = "bg-[#f2f4ff] text-black";
             if (isSunday) bgClass = "bg-sky-400 text-white";
             if (isToday) bgClass = "bg-black text-white";
@@ -171,13 +195,24 @@ export default function Calendar() {
               >
                 <span className="text-lg font-bold">{day}</span>
                 <div className="flex gap-[2px] mt-[2px]">
-                  {events.map((event, idx) => (
-                    <span
-                      key={idx}
-                      className={`w-3 h-3 rounded-full ${categoryColors[event.type] || ""}`}
-                      title={event.title || event.type}
-                    ></span>
+                  {displayedEvents.map(({ category, count }) => (
+                    <div key={category} className="flex items-center gap-0.5">
+                      <span
+                        className={`w-3 h-3 rounded-full ${categoryColors[category] || ""}`}
+                        title={`${category}: ${count} event(s)`}
+                      />
+                      {count > 1 && (
+                        <span className="text-[8px] font-medium text-gray-500">
+                          +{count - 1}
+                        </span>
+                      )}
+                    </div>
                   ))}
+                  {remainingTypes > 0 && (
+                    <span className="text-[8px] font-medium text-gray-500 ml-0.5">
+                      +{remainingTypes}
+                    </span>
+                  )}
                 </div>
 
                 {events.length > 0 && (
@@ -186,7 +221,7 @@ export default function Calendar() {
                       {events.map((event, index) => (
                         <li key={index} className="border-b pb-2 last:border-b-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`inline-block w-2 h-2 rounded-full ${categoryColors[event.type] || ""}`}></span>
+                            <span className={`inline-block w-2 h-2 rounded-full ${categoryColors[event.category] || ""}`}></span>
                             <span className="font-semibold truncate">{event.title}</span>
                           </div>
                           
@@ -196,7 +231,7 @@ export default function Calendar() {
                             </div>
                           )}
 
-                          {event.type === "Meeting" ? (
+                          {event.category === "Meeting" ? (
                             <>
                               {event.startTime && event.endTime && (
                                 <div className="text-xs text-blue-600">

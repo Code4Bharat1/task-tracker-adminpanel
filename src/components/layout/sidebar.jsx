@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   LayoutDashboard,
-  ClipboardCheck,
+  // ClipboardCheck,
   CalendarDays,
   Clock,
   FileText,
@@ -17,13 +17,13 @@ import {
   LogOut,
   MailCheck,
   UserPlus,
-  Send,
+  // Send,
 } from "lucide-react";
 
 const menuItems = [
   { label: "Add Employees", icon: UserPlus, href: "/addemployees" },
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Assign Task", icon: ClipboardCheck, href: "/assigntask" },
+  // { label: "Assign Task", icon: ClipboardCheck, href: "/assigntask" },
   { label: "View Attendance", icon: CalendarDays, href: "/viewattendance" },
   { label: "View TimeSheet", icon: Clock, href: "/viewtimesheet" },
   { label: "Calendar", icon: FileText, href: "/calendar" },
@@ -31,7 +31,7 @@ const menuItems = [
   { label: "Leave", icon: MailCheck, href: "/leavetable" },
   { label: "Salary", icon: Coins, href: "/salary" },
   { label: "Expense", icon: Receipt, href: "/expenseRequest" },
-  { label: "Post Upload", icon: Send, href: "/postupload" },
+  // { label: "Post Upload", icon: Send, href: "/postupload" },
   { label: "Performance Board", icon: TrendingUp, href: "/performanceboard" },
   { label: "Company Policies", icon: ShieldCheck, href: "/companypolicy" },
   { label: "Logout", icon: LogOut, href: "/" },
@@ -48,7 +48,7 @@ export default function Sidebar() {
       "
     >
       {/* Logo */}
-      <div className="flex items-center justify-center h-12 w-full mb-2">
+      <div className="flex items-center justify-center h-12 w-full md:py-12">
         <Image
           src="/signup/tasklogo.png"
           alt="Logo"
@@ -61,10 +61,8 @@ export default function Sidebar() {
       {/* Scrollable Menu */}
       <nav
         className="
-          flex-1 w-full px-2 overflow-y-auto
-          scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent
-          hover:scrollbar-thumb-gray-600
-          scrollbar-thumb-rounded
+          flex-1 w-full px-2 overflow-y-hidden
+          scrollbar-y-hidden
         "
         style={{
           scrollbarWidth: "thin",
@@ -81,7 +79,7 @@ export default function Sidebar() {
             "
           >
             <item.icon className="w-5 h-5" />
-            <span className="hidden sm:inline font-medium text-[10px] sm:text-[12px] md:text-sm lg:text-lg">
+            <span className="hidden sm:inline font-medium text-[8px] sm:text-[12px] md:text-[16px]">
               {item.label}
             </span>
           </Link>
