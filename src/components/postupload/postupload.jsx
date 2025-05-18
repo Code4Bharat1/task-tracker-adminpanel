@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { FaTrashAlt, FaTimes } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 
-// Load pdf.js dynamically (client-side only)
 let pdfjsLib;
 if (typeof window !== "undefined") {
   pdfjsLib = require("pdfjs-dist/build/pdf");
@@ -15,15 +13,18 @@ if (typeof window !== "undefined") {
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js";
 }
 
-// Modal Component for Post Confirmation
+// Post Confirmation Modal
 const PostConfirmationModal = ({ isOpen, onClose, onConfirm, postContent }) => {
   if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md text-center">
-        <h2 className="text-lg font-semibold mb-4 text-[#6B1A2C]">Confirm Post</h2>
-        <p className="mb-2 text-sm text-gray-600">Are you sure you want to post this?</p>
+        <h2 className="text-lg font-semibold mb-4 text-[#6B1A2C]">
+          Confirm Post
+        </h2>
+        <p className="mb-2 text-sm text-gray-600">
+          Are you sure you want to post this?
+        </p>
         {postContent.image && (
           <img
             src={postContent.image}
@@ -56,10 +57,9 @@ const PostConfirmationModal = ({ isOpen, onClose, onConfirm, postContent }) => {
   );
 };
 
-// Modal Component for Full Image View
+// Full Image Modal
 const FullImageModal = ({ isOpen, onClose, imageSrc }) => {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div className="relative bg-white p-4 rounded-xl max-w-4xl max-h-[90vh] overflow-auto">
@@ -70,7 +70,11 @@ const FullImageModal = ({ isOpen, onClose, imageSrc }) => {
           <FaTimes size={16} />
         </button>
         {imageSrc && (
-          <img src={imageSrc} alt="Full Preview" className="w-full h-auto object-contain" />
+          <img
+            src={imageSrc}
+            alt="Full Preview"
+            className="w-full h-auto object-contain"
+          />
         )}
       </div>
     </div>
@@ -80,20 +84,17 @@ const FullImageModal = ({ isOpen, onClose, imageSrc }) => {
 export default function PostUpload() {
   const [currentDate, setCurrentDate] = useState("");
   const [message, setMessage] = useState("");
-  const [note, setNote] = useState(
-    "This component uses 'use client' as it relies on client-side interactivity."
-  );
+  const [note, setNote] = useState("This component uses 'use client'.");
   const [selectedFiles, setSelectedFiles] = useState([null]);
   const [fileNames, setFileNames] = useState(["No File chosen"]);
   const [filePreview, setFilePreview] = useState(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showFullImageModal, setShowFullImageModal] = useState(false);
-  const [isAdmin] = useState(true); // Simulate admin status; replace with real auth check
+  const [isAdmin] = useState(true);
 
-  const underlineRef = useRef(null);
   const router = useRouter();
+  const underlineRef = useRef(null);
 
-  // GSAP animation for the title underline
   useEffect(() => {
     if (underlineRef.current) {
       gsap.fromTo(
@@ -104,29 +105,21 @@ export default function PostUpload() {
     }
   }, []);
 
-  // Set current date
   useEffect(() => {
     const dateStr = new Date().toLocaleDateString("en-GB");
     setCurrentDate(dateStr);
   }, []);
 
-  // Handle file selection and preview
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Update selectedFiles and fileNames
-    const updatedFiles = [file];
-    const updatedNames = [file.name];
-    setSelectedFiles(updatedFiles);
-    setFileNames(updatedNames);
+    setSelectedFiles([file]);
+    setFileNames([file.name]);
 
-    // Generate preview
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = () => {
-        setFilePreview(reader.result); // Base64 string
-      };
+      reader.onload = () => setFilePreview(reader.result);
       reader.readAsDataURL(file);
     } else if (file.type === "application/pdf") {
       try {
@@ -140,47 +133,38 @@ export default function PostUpload() {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        await page.render({
-          canvasContext: context,
-          viewport: viewport,
-        }).promise;
-
-        const pdfPreviewUrl = canvas.toDataURL("image/png");
-        setFilePreview(pdfPreviewUrl);
+        await page.render({ canvasContext: context, viewport }).promise;
+        setFilePreview(canvas.toDataURL("image/png"));
       } catch (error) {
-        console.error("Error rendering PDF preview:", error);
-        setFilePreview(null);
+        console.error("PDF render error:", error);
         toast.error("Failed to render PDF preview.");
+        setFilePreview(null);
       }
     } else {
-      toast.error("Unsupported file type. Please upload an image or PDF.");
+      toast.error("Unsupported file type. Please upload image or PDF.");
       setSelectedFiles([null]);
       setFileNames(["No File chosen"]);
       setFilePreview(null);
     }
   };
 
-  // Handle file deletion
   const handleFileDelete = () => {
     setSelectedFiles([null]);
     setFileNames(["No File chosen"]);
     setFilePreview(null);
   };
 
-  // Handle preview click for admins
   const handlePreviewClick = () => {
-    if (isAdmin) {
-      setShowFullImageModal(true);
-    }
+    if (isAdmin) setShowFullImageModal(true);
   };
 
-  // Get next sequential ID
   const getNextId = () => {
     const storedPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-    return storedPosts.length > 0 ? Math.max(...storedPosts.map((post) => post.id)) + 1 : 1;
+    return storedPosts.length > 0
+      ? Math.max(...storedPosts.map((p) => p.id)) + 1
+      : 1;
   };
 
-  // Handle post submission
   const handlePost = () => {
     if (!selectedFiles[0] && !message && !note) {
       toast.error("Please add a file, message, or note to post.");
@@ -189,13 +173,11 @@ export default function PostUpload() {
     setShowConfirmationModal(true);
   };
 
-  // Confirm post submission
   const confirmPost = () => {
-    // Save post to localStorage
     const posts = JSON.parse(localStorage.getItem("posts") || "[]");
     const newPost = {
-      id: getNextId(), // Sequential ID
-      image: filePreview, // Base64 string
+      id: getNextId(),
+      image: filePreview,
       message,
       note,
       date: new Date().toISOString(),
@@ -203,12 +185,11 @@ export default function PostUpload() {
     posts.push(newPost);
     localStorage.setItem("posts", JSON.stringify(posts));
 
-    // Reset form
     setSelectedFiles([null]);
     setFileNames(["No File chosen"]);
     setFilePreview(null);
     setMessage("");
-    setNote("This component uses 'use client' as it relies on client-side interactivity.");
+    setNote("This component uses 'use client'.");
     setShowConfirmationModal(false);
     toast.success("Post submitted successfully!");
   };
@@ -216,25 +197,21 @@ export default function PostUpload() {
   return (
     <>
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-      <div className="relative ml-10 mt-4 w-max ">
+
+      <div className="relative ml-10 mt-4 w-max">
         <h2 className="text-2xl font-bold text-black">Create Post</h2>
         <span
           ref={underlineRef}
-          className="absolute left-0 bottom-0 h-[2px] bg-yellow-500 w-full scale-x-0"
+          className="absolute left-0 bottom-0 h-[2px] bg-[#018ABE] w-full scale-x-0"
         ></span>
       </div>
 
-      <div className="flex items-center justify-center min-h-screen bg-white p-4 pt-10  -mt-16 ">
-        <div className="bg-white rounded-xl w-full max-w-5xl p-6 border-2 border-gray-300 relative shadow-lg">
+      <div className="flex items-center justify-center min-h-screen bg-white p-4 pt-10 -mt-16">
+        <div className="bg-white rounded-xl w-full max-w-5xl p-6 border-2 border-gray-300 shadow-lg">
           <div className="flex justify-between items-center mx-20 mb-6">
-            <button className="bg-white px-4 py-2 text-xl rounded-full shadow-md border border-gray-300">
+            <button className="bg-white px-4 py-2 text-xl rounded-md shadow-md border border-gray-300">
               {currentDate}
             </button>
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <div className="w-[70px] h-[70px] rounded-full overflow-hidden border-2 border-gray-300">
-                <Image src="/layout/profile.png" alt="avatar" width={70} height={70} />
-              </div>
-            </div>
             <button
               onClick={() => router.push("/posthistory")}
               className="ml-auto bg-[#058CBF] text-white px-4 py-2 rounded hover:bg-[#69b0c9]"
@@ -243,85 +220,81 @@ export default function PostUpload() {
             </button>
           </div>
 
-          <hr className="h-0.5 bg-gray-400 border-0" />
+          <hr className="h-0.5 bg-gray-200 border-0" />
 
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-4">
               <div className="flex flex-col gap-2 w-1/2">
-                <label className="w-32 text-lg text-left">Message</label>
+                <label className="text-lg">Message</label>
                 <textarea
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Enter your message..."
                   rows={3}
                 />
               </div>
               <div className="flex flex-col gap-2 w-1/2">
-                <label className="w-32 text-lg text-left">Note</label>
+                <label className="text-lg">Note</label>
                 <textarea
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Enter your note..."
                   rows={3}
                 />
               </div>
             </div>
 
-            {/* Integrated file input div */}
-            <div>
-              <label className="block mb-1 font-medium text-black">Attachment</label>
-              <div className="flex items-center w-full max-w-md">
-                <div className="flex-grow flex items-center bg-gray-200 border border-gray-400 rounded-md px-2 py-2 shadow-sm">
-                  <label className="cursor-pointer bg-white px-3 py-1 rounded shadow text-sm font-medium mr-2">
-                    Choose File
-                    <input
-                      type="file"
-                      id="file-input"
-                      className="hidden"
-                      accept="image/*,application/pdf"
-                      onChange={handleFileChange}
-                    />
-                  </label>
-                  <span className="text-sm text-gray-700">{fileNames[0]}</span>
+            <div className="flex flex-col items-center justify-center w-full mt-6">
+              <label className="text-lg font-semibold text-black mb-2">
+                Attachment
+              </label>
+
+              <label className="w-full max-w-md cursor-pointer">
+                <div className="px-6 py-4 bg-white border-2 border-dashed border-gray-300 rounded-lg shadow-sm text-center hover:bg-gray-50 transition">
+                  <p className="text-gray-600 font-medium">
+                    Click to select a file
+                  </p>
                 </div>
-                {selectedFiles[0] && (
-                  <FaTrashAlt
-                    className="text-black cursor-pointer ml-2"
-                    size={16}
-                    onClick={handleFileDelete}
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+
+              <p className="mt-2 text-sm text-gray-500">{fileNames[0]}</p>
+
+              {filePreview && (
+                <div className="mt-4 flex flex-col items-center">
+                  <img
+                    src={filePreview}
+                    alt="Preview"
+                    onClick={handlePreviewClick}
+                    className="max-w-xs max-h-64 rounded-md border cursor-pointer"
                   />
-                )}
-              </div>
+                  <button
+                    onClick={handleFileDelete}
+                    className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    <FaTrashAlt className="inline mr-2" /> Delete File
+                  </button>
+                </div>
+              )}
             </div>
 
-            {filePreview && (
-              <div className="flex justify-start ml-4">
-                <img
-                  src={filePreview}
-                  alt="Preview"
-                  className={`mt-4 w-full max-w-md h-64 text-black object-contain rounded-md ${
-                    isAdmin ? "cursor-pointer" : "cursor-default"
-                  }`}
-                  onClick={handlePreviewClick}
-                />
-              </div>
-            )}
-
-            <div className="flex justify-center mt-8">
+            <div className="mt-6 flex justify-center">
               <button
                 onClick={handlePost}
-                className="flex items-center bg-[#058CBF] text-lg text-white px-6 py-2 rounded hover:bg-cyan-600"
+                className="bg-[#058CBF] text-white px-6 py-3 rounded-md hover:bg-[#4ea2c3]"
               >
-                Post
+                Submit Post
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Post Confirmation Modal */}
       <PostConfirmationModal
         isOpen={showConfirmationModal}
         onClose={() => setShowConfirmationModal(false)}
@@ -329,12 +302,11 @@ export default function PostUpload() {
         postContent={{ image: filePreview, message, note }}
       />
 
-      {/* Full Image Modal */}
       <FullImageModal
         isOpen={showFullImageModal}
         onClose={() => setShowFullImageModal(false)}
         imageSrc={filePreview}
       />
-    </>
-  );
+    </>
+  );
 }

@@ -1,368 +1,596 @@
-'use client';
-import React, { useRef, useEffect } from 'react';
-import gsap from "gsap";
-import jsPDF from 'jspdf';
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { RiBankFill, RiMoneyRupeeCircleFill } from "react-icons/ri";
+import { CheckCircle, Clock, Eye, EyeOff, Filter, X } from "lucide-react";
 import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
 
-export default function SalarySlipPage() {
-    const pdfRef = useRef();
+export default function SalaryPage() {
+    const router = useRouter();
+    const [filterStatus, setFilterStatus] = useState("All");
+    const [showPayModal, setShowPayModal] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const underlineRef = useRef(null);
-    
+
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+
+    const [salaryData, setSalaryData] = useState([
+        { id: "NXC101", name: "Shubham Prajapati", role: "Senior Software Developer", amount: "₹25,000", rawAmount: 25000, date: "10-05-2025", status: "Pending", accountNumber: "123456789012345678", ifscCode: "SBIN0012345" },
+        { id: "NXC102", name: "Rohan Pawar", role: "Senior Software Developer", amount: "₹25,000", rawAmount: 25000, date: "15-03-2025", status: "Pending", accountNumber: "987654321098765432", ifscCode: "HDFC0012345" },
+        { id: "NXC103", name: "Harsh Singh", role: "Junior Graphic Designer", amount: "₹22,000", rawAmount: 22000, date: "18-05-2025", status: "Pending", accountNumber: "456789012345678901", ifscCode: "ICIC0012345" },
+        { id: "NXC104", name: "Henna", role: "Junior Software Developer", amount: "₹20,000", rawAmount: 20000, date: "23-05-2025", status: "Pending", accountNumber: "567890123456789012", ifscCode: "UTIB0012345" },
+    ]);
+
     useGSAP(() => {
-        gsap.fromTo(
-          underlineRef.current,
-          { width: "0%" },
-          { width: "100%", duration: 1, ease: "power2.out" }
-        );
+        gsap.fromTo(underlineRef.current, { scaleX: 0, transformOrigin: "left" }, { scaleX: 1, duration: 0.8, ease: "power2.out" });
     }, []);
 
-    const handleDownloadPdf = () => {
-        try {
-            // Create PDF directly
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-    
-            // PDF dimensions
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            // Set fonts
-            pdf.setFont("helvetica", "normal");
-            
-            // Added more spacing at the top - moved title position down
-            const titleTopMargin = 35; // Changed from 25 to give more space at top
-            
-            // Title (centered with underline effect)
-            pdf.setFontSize(16);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Salary Payslip", pdfWidth / 2, titleTopMargin, { align: "center" });
-            pdf.setDrawColor(255, 193, 7); // Yellow color for underline
-            pdf.line(pdfWidth / 2 - 20, titleTopMargin + 2, pdfWidth / 2 + 20, titleTopMargin + 2);
-            
-            // Company info - Adjusted positions to match the new title position
-            pdf.setFontSize(11);
-            pdf.text("Nextcore Alliance", 20, titleTopMargin + 10);
-            pdf.setFont("helvetica", "normal");
-            pdf.setFontSize(10);
-            pdf.text("Kurla, Mumbai", 20, titleTopMargin + 15);
-            pdf.text("iscr.orgin.com | 8976104646", 20, titleTopMargin + 20);
-            
-            // Month line - Adjusted position
-            const monthLineY = titleTopMargin + 30;
-            pdf.text("PaySlip for the Month of September 2025", pdfWidth / 2, monthLineY, { align: "center" });
-            pdf.line(20, monthLineY + 3, pdfWidth - 20, monthLineY + 3);
-            
-            // Table headers (Blue background) - Adjusted position
-            const tableStartY = monthLineY + 10;
-            const blueColor = [1, 138, 190]; // #018ABE
-            pdf.setFillColor(...blueColor);
-            pdf.rect(20, tableStartY, pdfWidth - 40, 8, "F");
-            pdf.setTextColor(255, 255, 255); // White text
-            pdf.setFontSize(10);
-            pdf.setFont("helvetica", "bold");
-            
-            // Table column setup
-            const col1Width = (pdfWidth - 40) / 4;
-            
-            // Headers
-            pdf.text("EARNINGS", 20 + col1Width/2, tableStartY + 5, { align: "center" });
-            pdf.text("AMOUNT", 20 + col1Width + col1Width/2, tableStartY + 5, { align: "center" });
-            pdf.text("DEDUCTIONS", 20 + col1Width*2 + col1Width/2, tableStartY + 5, { align: "center" });
-            pdf.text("AMOUNT", 20 + col1Width*3 + col1Width/2, tableStartY + 5, { align: "center" });
-            
-            // Reset text color to black for content
-            pdf.setTextColor(0, 0, 0);
-            
-            // Table borders - Main Content Table
-            pdf.setDrawColor(200, 200, 200); // Light gray for borders
-            
-            // Create exact table grid - Horizontal lines
-            const rowsCount = 7; // 6 content rows + 1 total row
-            const startY = tableStartY;
-            const rowHeight = 8;
-            const tableHeight = rowHeight * rowsCount;
-            
-            // Draw outer border
-            pdf.rect(20, startY, pdfWidth - 40, tableHeight);
-            
-            // Draw all horizontal lines
-            for (let i = 1; i < rowsCount; i++) {
-                pdf.line(20, startY + (rowHeight * i), pdfWidth - 20, startY + (rowHeight * i));
+    const [formData, setFormData] = useState({ fullName: "", accountNumber: "", confirmAccountNumber: "", ifscCode: "", amount: "", employeeId: "" });
+    const [errors, setErrors] = useState({ fullName: "", accountNumber: "", confirmAccountNumber: "", ifscCode: "", amount: "", employeeId: "" });
+    const [touched, setTouched] = useState({ fullName: false, accountNumber: false, confirmAccountNumber: false, ifscCode: false, amount: false, employeeId: false });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+    const [filteredEmployees, setFilteredEmployees] = useState([]);
+    const [isValid, setIsValid] = useState(false);
+    const [ifscSuggestions, setIfscSuggestions] = useState([]);
+    const [showIfscSuggestions, setShowIfscSuggestions] = useState(false);
+
+    const sampleIfscCodes = [
+        { code: "SBIN0001234", bank: "State Bank of India" },
+        { code: "HDFC0001234", bank: "HDFC Bank" },
+        { code: "ICIC0001234", bank: "ICICI Bank" },
+        { code: "UTIB0001234", bank: "Axis Bank" },
+        { code: "PUNB0001234", bank: "Punjab National Bank" },
+    ];
+
+    useEffect(() => { validateForm(); }, [formData]);
+    useEffect(() => {
+        if (searchTerm.length > 0) {
+            const filtered = salaryData.filter((employee) => employee.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            setFilteredEmployees(filtered);
+            setShowEmployeeDropdown(filtered.length > 0);
+        } else {
+            setFilteredEmployees([]);
+            setShowEmployeeDropdown(false);
+        }
+    }, [searchTerm, salaryData]);
+
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => setShowToast(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
+    const validateForm = () => {
+        const newErrors = { ...errors };
+        let formIsValid = true;
+
+        if (formData.fullName.trim() === "") {
+            newErrors.fullName = "Full name is required";
+            formIsValid = false;
+        } else if (formData.fullName.trim().length < 3) {
+            newErrors.fullName = "Full name must be at least 3 characters";
+            formIsValid = false;
+        } else {
+            newErrors.fullName = "";
+        }
+
+        if (formData.accountNumber.trim() === "") {
+            newErrors.accountNumber = "Account number is required";
+            formIsValid = false;
+        } else if (!/^\d+$/.test(formData.accountNumber)) {
+            newErrors.accountNumber = "Account number must contain only digits";
+            formIsValid = false;
+        } else if (formData.accountNumber.length < 9 || formData.accountNumber.length > 18) {
+            newErrors.accountNumber = "Account number must be 9 to 18 digits";
+            formIsValid = false;
+        } else {
+            newErrors.accountNumber = "";
+        }
+
+        if (formData.confirmAccountNumber.trim() === "") {
+            newErrors.confirmAccountNumber = "Please confirm account number";
+            formIsValid = false;
+        } else if (formData.accountNumber !== formData.confirmAccountNumber) {
+            newErrors.confirmAccountNumber = "Account numbers do not match";
+            formIsValid = false;
+        } else {
+            newErrors.confirmAccountNumber = "";
+        }
+
+        if (formData.ifscCode.trim() === "") {
+            newErrors.ifscCode = "IFSC code is required";
+            formIsValid = false;
+        } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) {
+            newErrors.ifscCode = "Invalid IFSC format (e.g., SBIN0001234)";
+            formIsValid = false;
+        } else {
+            newErrors.ifscCode = "";
+        }
+
+        if (formData.amount.trim() === "") {
+            newErrors.amount = "Amount is required";
+            formIsValid = false;
+        } else if (!/^\d+(\.\d{1,2})?$/.test(formData.amount) || parseFloat(formData.amount) <= 0) {
+            newErrors.amount = "Amount must be greater than zero";
+            formIsValid = false;
+        } else {
+            newErrors.amount = "";
+        }
+
+        setErrors(newErrors);
+        setIsValid(formIsValid);
+        return formIsValid;
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setTouched({ ...touched, [name]: true });
+
+        if (name === "fullName") {
+            setSearchTerm(value);
+            setFormData({ ...formData, [name]: value });
+        } else if (name === "accountNumber" || name === "confirmAccountNumber") {
+            if (/^\d*$/.test(value) && value.length <= 18) {
+                setFormData({ ...formData, [name]: value });
             }
-            
-            // Draw all vertical lines
-            pdf.line(20 + col1Width, startY, 20 + col1Width, startY + tableHeight); // Vertical line 1
-            pdf.line(20 + col1Width*2, startY, 20 + col1Width*2, startY + tableHeight); // Vertical line 2
-            pdf.line(20 + col1Width*3, startY, 20 + col1Width*3, startY + tableHeight); // Vertical line 3
-            
-            // Earnings and deductions content
-            pdf.setFont("helvetica", "normal");
-            
-            // Function to properly format currency with Rs
-            const formatCurrency = (amount) => {
-                return "Rs. " + amount;
-            };
-            
-            // Center text vertically in each cell
-            const cellPadding = 4;
-            let negativeOffset = -5; // Example negative value
-            let yPos = startY + rowHeight - negativeOffset; 
-            
-            
-            // Table data rows
-            pdf.text("Basic Salary", 22, yPos);
-            pdf.text(formatCurrency("50,600.00"), 20 + col1Width + 2, yPos);
-            pdf.text("EPF", 20 + col1Width*2 + 2, yPos);
-            pdf.text(formatCurrency("800.00"), 20 + col1Width*3 + 2, yPos);
-            yPos += rowHeight;
-            
-            pdf.text("House Rent Allowance", 22, yPos);
-            pdf.text(formatCurrency("200.00"), 20 + col1Width + 2, yPos);
-            pdf.text("Health Insurance", 20 + col1Width*2 + 2, yPos);
-            pdf.text(formatCurrency("356.36"), 20 + col1Width*3 + 2, yPos);
-            yPos += rowHeight;
-            
-            pdf.text("Conveyance", 22, yPos);
-            pdf.text(formatCurrency("150.00"), 20 + col1Width + 2, yPos);
-            pdf.text("Professional Tax", 20 + col1Width*2 + 2, yPos);
-            pdf.text(formatCurrency("62.55"), 20 + col1Width*3 + 2, yPos);
-            yPos += rowHeight;
-            
-            pdf.text("Medical", 22, yPos);
-            pdf.text(formatCurrency("150.00"), 20 + col1Width + 2, yPos);
-            pdf.text("TDS", 20 + col1Width*2 + 2, yPos);
-            pdf.text(formatCurrency("0.00"), 20 + col1Width*3 + 2, yPos);
-            yPos += rowHeight;
-            
-            pdf.text("Special Allowance", 22, yPos);
-            pdf.text(formatCurrency("300.00"), 20 + col1Width + 2, yPos);
-            pdf.text("", 20 + col1Width*2 + 2, yPos);
-            pdf.text("", 20 + col1Width*3 + 2, yPos);
-            yPos += rowHeight;
-            
-            pdf.text("Other", 22, yPos);
-            pdf.text(formatCurrency("10.00"), 20 + col1Width + 2, yPos);
-            pdf.text("", 20 + col1Width*2 + 2, yPos);
-            pdf.text("", 20 + col1Width*3 + 2, yPos);
-            
-            // Total row with blue background
-            const totalRowY = startY + (rowHeight * 7);
-            pdf.setFillColor(...blueColor);
-            pdf.rect(20, totalRowY, pdfWidth - 40, rowHeight, "F");
-            pdf.setTextColor(255, 255, 255); // White text
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Gross Salary", 22, totalRowY + 5.5);
-            pdf.text(formatCurrency("51,410.00"), 20 + col1Width + 2, totalRowY + 5.5);
-            pdf.text("Total Deductions", 20 + col1Width*2 + 2, totalRowY + 5.5);
-            pdf.text(formatCurrency("1,218.55"), 20 + col1Width*3 + 2, totalRowY + 5.5);
-            
-            // Reset text color
-            pdf.setTextColor(0, 0, 0);
-            
-            // Reimbursements section - Adjusted position
-            const reimbRowY = totalRowY + rowHeight + 10;
-            pdf.setFillColor(...blueColor); // Blue color 
-            pdf.rect(20, reimbRowY, pdfWidth - 40, rowHeight, "F");
-            pdf.setTextColor(255, 255, 255); // White text
-            pdf.setFontSize(10);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("REIMBURSEMENTS", 20 + col1Width/2, reimbRowY + 5.5, { align: "center" });
-            pdf.text("AMOUNT", 20 + col1Width + col1Width/2, reimbRowY + 5.5, { align: "center" });
-            pdf.text("", 20 + col1Width*2 + col1Width/2, reimbRowY + 5.5, { align: "center" });
-            pdf.text("", 20 + col1Width*3 + col1Width/2, reimbRowY + 5.5, { align: "center" });
-            
-            // Reset text color
-            pdf.setTextColor(0, 0, 0);
-            
-            // Add borders for reimbursement section
-            const reimbTableRows = 4; // 3 items + 1 total row
-            const reimbTableHeight = rowHeight * reimbTableRows;
-            
-            pdf.setDrawColor(200, 200, 200);
-            // Outer border
-            pdf.rect(20, reimbRowY + rowHeight, col1Width * 2, reimbTableHeight);
-            // Vertical line
-            pdf.line(20 + col1Width, reimbRowY + rowHeight, 20 + col1Width, reimbRowY + rowHeight + reimbTableHeight);
-            
-            // Add horizontal lines for reimbursement rows
-            for (let i = 1; i < reimbTableRows; i++) {
-                pdf.line(20, reimbRowY + rowHeight + (i * rowHeight), 20 + (col1Width * 2), reimbRowY + rowHeight + (i * rowHeight));
+        } else if (name === "ifscCode") {
+            const upperValue = value.toUpperCase();
+            setFormData({ ...formData, [name]: upperValue });
+
+            if (upperValue.length >= 4) {
+                const filtered = sampleIfscCodes.filter(
+                    (item) => item.code.startsWith(upperValue) || item.bank.toUpperCase().includes(upperValue)
+                );
+                setIfscSuggestions(filtered);
+                setShowIfscSuggestions(filtered.length > 0);
+            } else {
+                setShowIfscSuggestions(false);
             }
-            
-            // Reimbursement items
-            let reimbY = reimbRowY + rowHeight + 6.5;
-            pdf.setFont("helvetica", "normal");
-            
-            pdf.text("Mobile Bill", 22, reimbY);
-            pdf.text(formatCurrency("50.00"), 20 + col1Width + 2, reimbY);
-            reimbY += rowHeight;
-            
-            pdf.text("Travel", 22, reimbY);
-            pdf.text(formatCurrency("30.00"), 20 + col1Width + 2, reimbY);
-            reimbY += rowHeight;
-            
-            pdf.text("Food", 22, reimbY);
-            pdf.text(formatCurrency("20.00"), 20 + col1Width + 2, reimbY);
-            reimbY += rowHeight;
-            
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Total Reimbursements", 22, reimbY);
-            pdf.text(formatCurrency("100.00"), 20 + col1Width + 2, reimbY);
-            
-            // Total Net Payable
-            const netPayableY = reimbRowY + rowHeight + reimbTableHeight + 10;
-            pdf.setFillColor(...blueColor); // Blue background
-            pdf.rect(20, netPayableY, pdfWidth - 40, 18, "F");
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(12);
-            pdf.setTextColor(255, 255, 255); // White text
-            pdf.text("TOTAL NET PAYABLE: " + formatCurrency("50,313.95"), pdfWidth/2, netPayableY + 7, { align: "center" });
-            pdf.setFontSize(9);
-            pdf.setFont("helvetica", "italic");
-            pdf.text("(Fifty Thousand Three Hundred and Thirteen Rupees & 95/100)", pdfWidth/2, netPayableY + 14, { align: "center" });
-            
-            // Save the PDF
-            pdf.save('salary-slip.pdf');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please check console for details.');
+        } else {
+            setFormData({ ...formData, [name]: value });
         }
     };
 
+    const selectEmployee = (employee) => {
+        setFormData({
+            ...formData,
+            fullName: employee.name,
+            employeeId: employee.id,
+            accountNumber: employee.accountNumber,
+            confirmAccountNumber: employee.accountNumber,
+            ifscCode: employee.ifscCode || "",
+            amount: employee.rawAmount.toString(),
+        });
+        setSearchTerm(employee.name);
+        setShowEmployeeDropdown(false);
+    };
+
+    const selectIfsc = (code) => {
+        setFormData({ ...formData, ifscCode: code });
+        setShowIfscSuggestions(false);
+    };
+
+    const handlePaymentSubmit = (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+        setToastMessage("Payment Successful!");
+        setShowToast(true);
+        setShowPayModal(false);
+    };
+    const resetForm = () => {
+        setFormData({
+            fullName: "",
+            accountNumber: "",
+            confirmAccountNumber: "",
+            ifscCode: "",
+            amount: "",
+            employeeId: "",
+        });
+        setErrors({
+            fullName: "",
+            accountNumber: "",
+            confirmAccountNumber: "",
+            ifscCode: "",
+            amount: "",
+            employeeId: "",
+        });
+        setTouched({
+            fullName: false,
+            accountNumber: false,
+            confirmAccountNumber: false,
+            ifscCode: false,
+            amount: false,
+            employeeId: false,
+        });
+        setSearchTerm("");
+        setShowEmployeeDropdown(false);
+        setShowPayModal(false);
+    };
+
+    // Filter data based on selected status
+    const filteredData =
+        filterStatus === "All"
+            ? salaryData
+            : salaryData.filter((item) => item.status === filterStatus);
+    const navigateToBankInfo = () => {
+        // In a real app, this would navigate to a bank info page
+        router.push("/bankinformation");
+    };
+
     return (
-        <div className="max-w-4xl mx-auto p-8 bg-white">
-            {/* Download Button */}
-            <div className="text-right mb-4">
-                <button 
-                    onClick={handleDownloadPdf}
-                    className="bg-[#058CBF] hover:bg-orange-600 text-white font-bold cursor-pointer py-2 px-4 rounded"
+        <div className="min-h-screen p-6 bg-white font-sans">
+            {/* Toast notification */}
+            {showToast && (
+                <div className="fixed top-6 right-6 bg-white shadow-lg rounded-lg p-4 flex items-center z-50 animate-fadeIn">
+                    <div
+                        className={`mr-3 ${toastMessage.includes("successfully")
+                            ? "text-green-500"
+                            : "text-red-500"
+                            }`}
+                    >
+                        {toastMessage.includes("successfully") ? (
+                            <CheckCircle className="w-6 h-6" />
+                        ) : (
+                            <X className="w-6 h-6" />
+                        )}
+                    </div>
+                    <div>
+                        <p
+                            className={`font-medium ${toastMessage.includes("successfully")
+                                ? "text-green-600"
+                                : "text-red-600"
+                                }`}
+                        >
+                            {toastMessage}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            <h1 className="text-3xl font-bold mb-6 relative inline-block text-gray-800">
+                <span
+                    ref={underlineRef}
+                    className="absolute left-0 top-10 h-[3px] bg-[#018ABE] w-full"
+                ></span>
+                Salary
+            </h1>
+
+            {/* Buttons */}
+            <div className="mt-6 flex justify-between items-center flex-wrap gap-4">
+                <button
+                    onClick={navigateToBankInfo}
+                    className="flex items-center gap-2 cursor-pointer px-4 py-2 text-lg bg-[#018ABE] text-white rounded shadow hover:bg-[#009BB5] transition-colors"
                 >
-                    Download PDF
+                    <RiBankFill className="w-8 h-8" /> Bank Information
+                </button>
+
+                <button
+                    onClick={() => setShowPayModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 cursor-pointer text-lg bg-[#018ABE] text-white rounded shadow hover:bg-[#009BB5] transition-colors"
+                >
+                    <RiMoneyRupeeCircleFill className="w-8 h-8" /> Pay salary
                 </button>
             </div>
 
-            {/* PDF Content Starts Here */}
-            <div ref={pdfRef} className="max-w-4xl mx-auto p-8 bg-white shadow-lg border rounded-lg mt-10 font-sans text-sm">
-                <div className="mb-6">
-                <h2 className="text-center font-semibold text-gray-800  text-2xl mb-6">
-                    <span className="relative inline-block">
-                        Salary Payslip
-                        <span
-                            ref={underlineRef}
-                            className="absolute left-0 bottom-0 h-[2px] bg-yellow-500 w-full"
-                        ></span>
-                    </span>
-                </h2>
-                <div className="mt-2">
-                    <p className="font-semibold">Nextcore Alliance</p>
-                    <p>Kurla, Mumbai</p>
-                    <p>iscr.orgin.com | 8976104646</p>
-                </div>
-                </div>
+            {/* Salary History */}
+            <div className="mt-10 flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Salary History</h2>
 
-                <div className="flex justify-center items-center pb-4">
-                    <p>PaySlip for the Month of September 2025</p>
-                </div>
-
-                {/* Table Head */}
-                <div className="grid grid-cols-4 bg-[#018ABE] text-white text-center font-semibold py-2 border border-gray-300">
-                    <div className="px-2">EARNINGS</div>
-                    <div className="px-2">AMOUNT</div>
-                    <div className="px-2">DEDUCTIONS</div>
-                    <div className="px-2">AMOUNT</div>
-                </div>
-
-                {/* Table Body - Main data table with consistent borders */}
-                <div className="border-x border-b border-gray-300">
-                    <div className="grid grid-cols-4 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Basic Salary</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 50,600.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">EPF</div>
-                        <div className="px-4 py-2">Rs. 800.00</div>
-                    </div>
-
-                    <div className="grid grid-cols-4 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">House Rent Allowance</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 200.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Health Insurance</div>
-                        <div className="px-4 py-2">Rs. 356.36</div>
-                    </div>
-
-                    <div className="grid grid-cols-4 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Conveyance</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 150.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Professional Tax</div>
-                        <div className="px-4 py-2">Rs. 62.55</div>
-                    </div>
-
-                    <div className="grid grid-cols-4 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Medical</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 150.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">TDS</div>
-                        <div className="px-4 py-2">Rs. 0.00</div>
-                    </div>
-
-                    <div className="grid grid-cols-4 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Special Allowance</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 300.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300"></div>
-                        <div className="px-4 py-2"></div>
-                    </div>
-
-                    <div className="grid grid-cols-4 text-sm">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Other</div>
-                        <div className="px-4 py-2 border-r border-gray-300">Rs. 10.00</div>
-                        <div className="px-4 py-2 border-r border-gray-300"></div>
-                        <div className="px-4 py-2"></div>
-                    </div>
-                </div>
-
-                {/* Final Total Row */}
-                <div className="grid grid-cols-4 text-center font-bold text-sm bg-[#018ABE] text-white">
-                    <div className="px-4 py-2">Gross Salary</div>
-                    <div className="px-4 py-2">Rs. 51,410.00</div>
-                    <div className="px-4 py-2">Total Deductions</div>
-                    <div className="px-4 py-2">Rs. 1,218.55</div>
-                </div>
-
-                <div className="grid grid-cols-4 py-2 bg-[#018ABE] text-white font-semibold text-center mt-6">
-                    <div className="px-4">REIMBURSEMENTS</div>
-                    <div className="px-4">AMOUNT</div>
-                    <div></div>
-                    <div></div>
-                </div>
-
-                {/* Reimbursements table with proper borders */}
-                <div className="border border-gray-300">
-                    <div className="grid grid-cols-2 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Mobile Bill</div>
-                        <div className="px-4 py-2">Rs. 50.00</div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Travel</div>
-                        <div className="px-4 py-2">Rs. 30.00</div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 text-sm border-b border-gray-300">
-                        <div className="px-4 py-2 border-r border-gray-300 text-left">Food</div>
-                        <div className="px-4 py-2">Rs. 20.00</div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 text-sm">
-                        <div className="px-4 py-2 border-r border-gray-300 font-semibold text-left">Total Reimbursements</div>
-                        <div className="px-4 py-2 font-semibold">Rs. 100.00</div>
-                    </div>
-                </div>
-
-                <div className="bg-[#018ABE] text-white mt-6 p-4 rounded-lg text-center">
-                    <p className="text-xl font-bold">TOTAL NET PAYABLE: Rs. 50,313.95</p>
-                    <p className="text-sm italic">(Fifty Thousand Three Hundred and Thirteen Rupees & 95/100)</p>
+                {/* Filter */}
+                <div className="relative">
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="pl-3 pr-8 py-2 rounded shadow-md appearance-none cursor-pointer"
+                    >
+                        <option value="All">Filter</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                    <Filter className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 </div>
             </div>
+
+            {/* Table */}
+            <div className="mt-4 bg-white shadow-lg rounded-lg overflow-hidden">
+                <table className="min-w-full border-separate border-spacing-0">
+                    <thead className="bg-[#018ABE] text-white">
+                        <tr>
+                            <th className="px-4 py-3 w-[10%] border-r border-gray-200 text-left">
+                                Employee ID
+                            </th>
+                            <th className="px-4 py-3 w-[40%] border-r border-gray-200 text-left">
+                                Employee Name
+                            </th>
+                            <th className="px-4 py-3 w-[10%] border-r border-gray-200 text-center">
+                                Amount (₹)
+                            </th>
+                            <th className="px-4 py-3 w-[10%] border-r border-gray-200 text-center">
+                                Date
+                            </th>
+                            <th className="px-4 py-3 w-[10%] border-r border-gray-200 text-center">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((item, idx) => (
+                            <tr
+                                key={idx}
+                                className="border-t hover:bg-gray-50 transition-colors"
+                            >
+                                <td className="px-4 py-3 w-[10%] relative text-gray-700 font-medium">
+                                    {" "}
+                                    {item.id}
+                                </td>
+                                <td className="px-4 py-3 relative">
+                                    <span className="custom-border-left"></span>
+                                    <span className="font-medium w-[40%] ">
+                                        {" "}
+                                        {item.name}
+                                    </span>{" "}
+                                    <span className="text-gray-500 w-[10%]"> - {item.role}</span>
+                                </td>
+                                <td className="px-4 py-3 w-[10%] font-medium relative text-center">
+                                    <span className="custom-border-left"></span>
+                                    {item.amount}
+                                </td>
+                                <td className="px-4 py-3 text-center w-[10%] relative">
+                                    <span className="custom-border-left"></span>
+                                    {item.date}
+                                </td>
+                                <td className="px-4 py-3 w-[10%] text-center relative">
+                                    <span className="custom-border-left"></span>
+                                    {item.status === "Paid" ? (
+                                        <span className="inline-flex items-center gap-1 font-medium text-green-600">
+                                            <CheckCircle className="w-4 h-4" /> Paid
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 font-medium text-orange-500">
+                                            <Clock className="w-4 h-4" /> Pending
+                                        </span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pay Salary Modal */}
+            {showPayModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg w-full max-w-xl p-6 relative px-20">
+                        <button
+                            onClick={() => setShowPayModal(false)}
+                            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+                            aria-label="Close modal"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <form
+                            className="space-y-4"
+                            onSubmit={handlePaymentSubmit}
+                            noValidate
+                        >
+                            <div className="relative">
+                                <label className="block text-lg font-medium mb-1">
+                                    Employee Name:
+                                </label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={searchTerm}
+                                    onChange={handleInputChange}
+                                    onBlur={() => {
+                                        // Delay hiding the dropdown to allow click events to register
+                                        setTimeout(() => {
+                                            if (
+                                                !document.activeElement?.closest(".employee-dropdown")
+                                            ) {
+                                                setShowEmployeeDropdown(false);
+                                            }
+                                        }, 200);
+                                        setTouched({ ...touched, fullName: true });
+                                    }}
+                                    onFocus={() => {
+                                        if (searchTerm.length > 0) {
+                                            setShowEmployeeDropdown(filteredEmployees.length > 0);
+                                        }
+                                    }}
+                                    className={`w-full p-2 border ${touched.fullName && errors.fullName
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        } shadow-[0px_2px_0px_rgba(0,0,0,0.2)] rounded focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                                    placeholder="Type to search employee"
+                                />
+                                {showEmployeeDropdown && (
+                                    <ul className="employee-dropdown absolute z-10 bg-white border border-gray-300 rounded shadow-lg w-full max-h-60 overflow-y-auto mt-1">
+                                        {filteredEmployees.map((employee) => (
+                                            <li
+                                                key={employee.id}
+                                                className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between"
+                                                onClick={() => {
+                                                    selectEmployee(employee);
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    // Prevent the blur event from hiding the dropdown before click
+                                                    e.preventDefault();
+                                                }}
+                                            >
+                                                <div>
+                                                    <div className="font-medium">{employee.name}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {employee.role}
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm font-medium text-gray-700">
+                                                    {employee.amount}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {touched.fullName && errors.fullName && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-lg font-medium mb-1">
+                                    Account Number:{" "}
+                                    <span className="text-sm text-gray-500">(9-18 digits)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="accountNumber"
+                                    value={formData.accountNumber}
+                                    onChange={handleInputChange}
+                                    onBlur={() => setTouched({ ...touched, accountNumber: true })}
+                                    className={`w-full p-2 border ${touched.accountNumber && errors.accountNumber
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        } shadow-[0px_2px_0px_rgba(0,0,0,0.2)] rounded focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                                    placeholder="Enter 9-18 digit account number"
+                                />
+                                {touched.accountNumber && errors.accountNumber && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.accountNumber}
+                                    </p>
+                                )}
+                                {!errors.accountNumber && formData.accountNumber.length > 0 && (
+                                    <p className="text-green-600 text-sm mt-1">Looks good!</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-lg font-medium mb-1">
+                                    Confirm Account Number:
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="confirmAccountNumber"
+                                        value={formData.confirmAccountNumber}
+                                        onChange={handleInputChange}
+                                        onBlur={() =>
+                                            setTouched({ ...touched, confirmAccountNumber: true })
+                                        }
+                                        className={`w-full p-2 border ${touched.confirmAccountNumber &&
+                                            errors.confirmAccountNumber
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                            } shadow-[0px_2px_0px_rgba(0,0,0,0.2)] rounded focus:outline-none focus:ring-2 focus:ring-blue-300 pr-10`}
+                                        placeholder="Re-enter your account number"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="w-5 h-5" />
+                                        ) : (
+                                            <Eye className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                                {touched.confirmAccountNumber &&
+                                    errors.confirmAccountNumber && (
+                                        <p className="text-red-500 text-sm mt-1">
+                                            {errors.confirmAccountNumber}
+                                        </p>
+                                    )}
+                            </div>
+
+                            <div className="relative">
+                                <label className="block text-lg font-medium mb-1">
+                                    IFSC Code:
+                                </label>
+                                <input
+                                    type="text"
+                                    name="ifscCode"
+                                    value={formData.ifscCode}
+                                    onChange={handleInputChange}
+                                    onBlur={() => setTouched({ ...touched, ifscCode: true })}
+                                    className={`w-full p-2 border ${touched.ifscCode && errors.ifscCode
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        } shadow-[0px_2px_0px_rgba(0,0,0,0.2)] rounded focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                                    maxLength={11}
+                                    placeholder="e.g., SBIN0001234"
+                                    autoComplete="off"
+                                />
+                                {showIfscSuggestions && (
+                                    <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow w-full max-h-40 overflow-auto mt-1">
+                                        {ifscSuggestions.map((item) => (
+                                            <li
+                                                key={item.code}
+                                                onClick={() => selectIfsc(item.code)}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                                            >
+                                                <strong>{item.code}</strong> - {item.bank}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {touched.ifscCode && errors.ifscCode && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.ifscCode}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-lg font-medium mb-1">
+                                    Amount:
+                                </label>
+                                <input
+                                    type="number"
+                                    name="amount"
+                                    value={formData.amount}
+                                    onChange={handleInputChange}
+                                    onBlur={() => setTouched({ ...touched, amount: true })}
+                                    className={`w-full p-2 border ${touched.amount && errors.amount
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                        } shadow-[0px_2px_0px_rgba(0,0,0,0.2)] rounded focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                                    min="0.01"
+                                    step="0.01"
+                                    placeholder="Enter amount to pay"
+                                />
+                                {touched.amount && errors.amount && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.amount}</p>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col items-center mt-8">
+                                <button
+                                    type="submit"
+                                    disabled={!isValid}
+                                    className={`px-10 py-2 rounded-md text-lg font-medium text-white ${isValid
+                                        ? "bg-[#018ABE] hover:bg-[#5e92a6]"
+                                        : "bg-gray-400 cursor-not-allowed"
+                                        } transition-colors`}
+                                >
+                                    Pay
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="bg-white underline text-gray-800 px-6 py-1 mt-1"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

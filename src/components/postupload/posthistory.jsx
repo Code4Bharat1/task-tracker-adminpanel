@@ -1,6 +1,7 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoAddCircleOutline, IoEyeOutline, IoClose } from "react-icons/io5";
@@ -11,9 +12,18 @@ export default function PostHistory() {
   const [selectedPost, setSelectedPost] = useState(null);
   const router = useRouter();
 
+  const underlineRef = useRef(null);
+
+  useGSAP(() => {
+    gsap.fromTo(
+      underlineRef.current,
+      { scaleX: 0, transformOrigin: "left" },
+      { scaleX: 1, duration: 0.8, ease: "power2.out" }
+    );
+  }, []);
+
   useEffect(() => {
     const storedPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-    console.log("Stored Posts:", storedPosts); // Debugging
     setPosts(storedPosts);
   }, []);
 
@@ -28,17 +38,20 @@ export default function PostHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+    <div className="min-h-screen bg-white p-4 sm:p-8">
       {/* Header */}
-      <div className="relative ml-4 sm:ml-10 mt-6 w-max">
-        <h2 className="text-3xl font-semibold text-gray-900">Post History</h2>
-        <span className="absolute left-0 bottom-0 h-1 bg-[#058CBF] w-full rounded-full"></span>
+      <div className="relative ml-4 mt-4 mb-4 w-max">
+        <h2 className="text-2xl font-bold text-black">Post History</h2>
+        <span
+          ref={underlineRef}
+          className="absolute left-0 bottom-0 h-[2px] bg-[#018ABE] w-full scale-x-0"
+        ></span>
       </div>
 
       {/* Create New Post Button */}
       <div className="flex justify-center mt-8">
         <button
-          onClick={() => router.push("/postupload")} // Updated route
+          onClick={() => router.push("/postupload")}
           className="bg-[#058CBF] text-white px-6 py-3 rounded-lg shadow-md hover:bg-[#69b0c9] transition-all duration-300 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-[#058CBF] focus:ring-offset-2"
           aria-label="Create a new post"
         >
@@ -47,10 +60,15 @@ export default function PostHistory() {
         </button>
       </div>
 
-      {/* Table */}
-      <div className={`max-w-6xl mx-auto mt-10 transition-all duration-300 ${isViewModalOpen ? "blur-sm" : ""}`}>
+      {/* Post Table */}
+      <div
+        className={`max-w-6xl mx-auto mt-10 transition-all duration-300 ${isViewModalOpen ? "blur-sm" : ""
+          }`}
+      >
         {posts.length === 0 ? (
-          <p className="text-center text-gray-600 text-lg font-medium">No posts available.</p>
+          <p className="text-center text-gray-600 text-lg font-medium">
+            No posts available.
+          </p>
         ) : (
           <div className="bg-white shadow-lg rounded-xl overflow-x-auto border border-gray-200">
             <table className="w-full table-auto min-w-[600px]">
@@ -67,9 +85,8 @@ export default function PostHistory() {
                 {posts.map((post, index) => (
                   <tr
                     key={post.id}
-                    className={`border-b border-gray-100 ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    } hover:bg-[#e6f4fa] transition-colors duration-200`}
+                    className={`border-b border-gray-100 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } hover:bg-[#e6f4fa] transition-colors duration-200`}
                   >
                     <td className="py-4 px-6 border-r border-gray-100 text-center">{post.id}</td>
                     <td className="py-4 px-6 border-r border-gray-100 text-center">
@@ -103,11 +120,11 @@ export default function PostHistory() {
         )}
       </div>
 
-      {/* View Post Modal */}
+      {/* View Modal */}
       <AnimatePresence>
         {isViewModalOpen && selectedPost && (
           <motion.div
-            className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60"
+            className="fixed inset-0 flex items-center justify-center z-50 bg-opacity-60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -127,7 +144,9 @@ export default function PostHistory() {
               >
                 <IoClose className="h-6 w-6" />
               </button>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Post Details</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+                Post Details
+              </h2>
               <div className="space-y-5">
                 <p className="text-gray-700 text-sm">
                   <strong className="font-semibold">ID:</strong> {selectedPost.id}
@@ -143,7 +162,7 @@ export default function PostHistory() {
                       src={selectedPost.image}
                       alt="Post"
                       className="w-full max-w-sm h-48 object-cover rounded-lg mt-2 mx-auto"
-                      onError={(e) => (e.target.src = "/placeholder-image.jpg")} // Fallback image
+                      onError={(e) => (e.target.src = "/placeholder-image.jpg")}
                     />
                   </div>
                 ) : (
@@ -154,7 +173,8 @@ export default function PostHistory() {
                   {selectedPost.message || "No message"}
                 </p>
                 <p className="text-gray-700 text-sm">
-                  <strong className="font-semibold">Note:</strong> {selectedPost.note || "No note"}
+                  <strong className="font-semibold">Note:</strong>{" "}
+                  {selectedPost.note || "No note"}
                 </p>
               </div>
               <button
