@@ -24,31 +24,31 @@ function Page() {
         companyName: "",
     });
 
+    const fetchProfile = async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/profile/getProfileAdmin`, {
+                credentials: "include",
+            });
+            const data = await res.json();
+
+            setProfile(data);
+            setFormData({
+                fullName: data.fullName || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                position: data.position || "Employee",
+                gender: data.gender || "-",
+                address: data.address || "-",
+                dateOfJoining: data.dateOfJoining || "-",
+                companyName: data.companyName || "-",
+            });
+            console.log("Profile data:", data);
+        } catch (error) {
+            console.error("Failed to fetch profile:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/profile/getProfileAdmin`, {
-                    credentials: "include",
-                });
-                const data = await res.json();
-
-                setProfile(data);
-                setFormData({
-                    fullName: data.fullName || "",
-                    email: data.email || "",
-                    phone: data.phone || "",
-                    position: data.position || "Employee",
-                    gender: data.gender || "-",
-                    address: data.address || "-",
-                    dateOfJoining: data.dateOfJoining || "-",
-                    companyName: data.companyName || "-",
-                });
-                console.log("Profile data:", data);
-            } catch (error) {
-                console.error("Failed to fetch profile:", error);
-            }
-        };
-
         fetchProfile();
     }, []);
 
@@ -74,9 +74,10 @@ function Page() {
             );
 
             if (res.status === 200) {
+                fetchProfile();
                 toast.success("Profile updated successfully!");
                 setIsEditing(false);
-                setProfile(res.data); // Optionally update displayed profile
+                setProfile(res.data);
             }
         } catch (error) {
             console.error("Failed to update profile", error);

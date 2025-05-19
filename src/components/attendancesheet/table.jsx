@@ -13,9 +13,11 @@ import {
   AlertTriangle,
   Check,
   Clock,
-  XCircle
+  XCircle,
+  BarChart4,
+  User,
+  CalendarDays
 } from "lucide-react";
-
 
 export default function AttendanceTable() {
   // State variables
@@ -26,7 +28,9 @@ export default function AttendanceTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
-
+  // Period filter states
+  const [activeFilterPeriod, setActiveFilterPeriod] = useState("month"); // 'day', 'week', 'month', 'year'
+  
   // Filter states
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // First day of current month
@@ -109,6 +113,61 @@ export default function AttendanceTable() {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
+  };
+
+  // Period filter functions
+  const setFilterToday = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setDateRange({
+      startDate: today,
+      endDate: today
+    });
+    setActiveFilterPeriod("day");
+  };
+
+  const setFilterThisWeek = () => {
+    const today = new Date();
+    const firstDayOfWeek = new Date(today);
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    firstDayOfWeek.setDate(diff);
+    
+    setDateRange({
+      startDate: firstDayOfWeek.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    });
+    setActiveFilterPeriod("week");
+  };
+
+  const setFilterThisMonth = () => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    setDateRange({
+      startDate: firstDayOfMonth.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    });
+    setActiveFilterPeriod("month");
+  };
+
+  const setFilterThisYear = () => {
+    const today = new Date();
+    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+    
+    setDateRange({
+      startDate: firstDayOfYear.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    });
+    setActiveFilterPeriod("year");
+  };
+
+  // Custom date range handler
+  const handleCustomDateRange = (start, end) => {
+    setDateRange({
+      startDate: start,
+      endDate: end
+    });
+    setActiveFilterPeriod("custom");
   };
 
   // Apply filters and sorting to data
@@ -251,6 +310,7 @@ export default function AttendanceTable() {
 
     return `${locality}, ${city}, ${state} ${postal || ''}`.trim();
   };
+  
   // Format date for display
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -319,11 +379,74 @@ export default function AttendanceTable() {
 
   const summary = getAttendanceSummary();
 
+  // Get period label for display
+  const getPeriodLabel = () => {
+    switch (activeFilterPeriod) {
+      case "day":
+        return "Today";
+      case "week":
+        return "This Week";
+      case "month":
+        return "This Month";
+      case "year":
+        return "This Year";
+      case "custom":
+        return "Custom Range";
+      default:
+        return "This Month";
+    }
+  };
+
+  // Get active button class
+  const getActiveButtonClass = (period) => {
+    return activeFilterPeriod === period
+      ? "bg-cyan-100 text-cyan-700 border-cyan-300"
+      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Header with title and stats */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Employee Attendance Dashboard</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Employee Attendance Dashboard</h1>
+          
+          {/* Period Selector */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={setFilterToday}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md border ${getActiveButtonClass("day")}`}
+            >
+              Today
+            </button>
+            <button
+              onClick={setFilterThisWeek}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md border ${getActiveButtonClass("week")}`}
+            >
+              This Week
+            </button>
+            <button
+              onClick={setFilterThisMonth}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md border ${getActiveButtonClass("month")}`}
+            >
+              This Month
+            </button>
+            <button
+              onClick={setFilterThisYear}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md border ${getActiveButtonClass("year")}`}
+            >
+              This Year
+            </button>
+          </div>
+        </div>
+
+        {/* Period indicator */}
+        <div className="flex items-center mb-6">
+          <CalendarDays size={18} className="text-cyan-600 mr-2" />
+          <span className="text-sm font-medium text-gray-700">
+            Viewing data for: <span className="text-cyan-700">{getPeriodLabel()}</span> ({dateRange.startDate} to {dateRange.endDate})
+          </span>
+        </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -413,7 +536,7 @@ export default function AttendanceTable() {
             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
               {/* Date Range */}
               <div className="w-full md:w-1/3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Date Range</label>
                 <div className="flex space-x-2">
                   <div className="w-1/2">
                     <div className="relative">
@@ -422,7 +545,7 @@ export default function AttendanceTable() {
                         type="date"
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         value={dateRange.startDate}
-                        onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                        onChange={(e) => handleCustomDateRange(e.target.value, dateRange.endDate)}
                       />
                     </div>
                   </div>
@@ -433,7 +556,7 @@ export default function AttendanceTable() {
                         type="date"
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         value={dateRange.endDate}
-                        onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                        onChange={(e) => handleCustomDateRange(dateRange.startDate, e.target.value)}
                       />
                     </div>
                   </div>
@@ -534,15 +657,34 @@ export default function AttendanceTable() {
             onClick={() => {
               setSearchTerm("");
               setSelectedRemarks([]);
-              setDateRange({
-                startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-                endDate: new Date().toISOString().split('T')[0]
-              });
+              setFilterThisMonth(); // Reset to default month view
             }}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
           >
             Reset Filters
           </button>
+        </div>
+      )}
+
+      {/* Data View Selector */}
+      {!loading && !error && filteredAndSortedData.length > 0 && (
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex rounded-md shadow-sm">
+            <button
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-cyan-700 bg-cyan-100 border border-cyan-300 rounded-l-lg"
+              title="Date view"
+            >
+              <CalendarDays size={16} />
+              <span className="ml-2 hidden sm:inline">Date View</span>
+            </button>
+            <button
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-r border-gray-300 rounded-r-lg hover:bg-gray-50"
+              title="Employee view (coming soon)"
+            >
+              <User size={16} />
+              <span className="ml-2 hidden sm:inline">Employee View</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -712,8 +854,41 @@ export default function AttendanceTable() {
         <div className="text-center py-10 text-gray-500">
           {loading ? 'Loading...' : error ? 'Error loading attendance.' : 'No records found.'}
         </div>
-      )
-      }
-    </div >
+      )}
+      
+      {/* Quick Stats Footer */}
+      {!loading && !error && filteredAndSortedData.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-4 mt-6 border border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+            <div className="flex items-center mb-2 sm:mb-0">
+              <BarChart4 size={18} className="text-cyan-600 mr-2" />
+              <span className="text-sm font-medium text-gray-700">Quick Stats for {getPeriodLabel()}</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                <span className="text-xs text-gray-600">Present: {summary.present}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                <span className="text-xs text-gray-600">Late: {summary.late}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                <span className="text-xs text-gray-600">Absent: {summary.absent}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                <span className="text-xs text-gray-600">On Leave: {summary.onLeave}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                <span className="text-xs text-gray-600">Half Day: {summary.halfDay}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

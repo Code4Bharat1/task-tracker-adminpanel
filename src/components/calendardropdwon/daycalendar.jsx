@@ -30,7 +30,6 @@ export default function Calendar() {
   const [todayKey, setTodayKey] = useState("");
   const [eventDates, setEventDates] = useState({});
   const underlineRef = useRef(null);
-  const userId = "64b81234567890abcdef1234";
 
   useEffect(() => {
     const today = new Date();
@@ -43,7 +42,10 @@ export default function Calendar() {
     const fetchCalendarData = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_API}/user/calendar/user/${userId}`
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/`,{
+            method: "GET",
+            credentials: "include",
+          }
         );
         const data = await res.json();
         

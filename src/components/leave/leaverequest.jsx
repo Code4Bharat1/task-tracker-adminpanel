@@ -99,7 +99,7 @@ export default function LeaveRequest() {
     if (!leave) return '';
     
     const days = leave.days;
-    if (days === 1) return '1 day';
+    if (days === 1 || days === 0) return '1 day';
     if (days < 7) return `${days} days`;
     
     const weeks = Math.floor(days / 7);
@@ -196,7 +196,7 @@ export default function LeaveRequest() {
             </span>
           </div>
           <div className="text-sm text-gray-600 font-medium">
-            {getLeaveDisplayDuration()}
+            {getLeaveDisplayDuration() || '1'}
           </div>
         </div>
         

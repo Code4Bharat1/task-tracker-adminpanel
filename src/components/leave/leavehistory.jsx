@@ -404,7 +404,7 @@ export default function LeaveTable() {
                       })}
                     </td>
                     <td className="px-4 py-3 font-medium">
-                      {entry.days} {entry.days > 1 ? "days" : "day"}
+                      {entry.days || '1'} {entry.days > 1 ? "days" : "day"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button

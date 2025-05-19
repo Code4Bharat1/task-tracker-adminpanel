@@ -16,8 +16,7 @@ export default function SchedulePage({ initialDate, closeModal }) {
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isEndOpen, setIsEndOpen] = useState(false);
 
-  // Hardcoded user ID - replace with dynamic value from authentication
-  const userId = "64b81234567890abcdef1234";
+
 
   const times = Array.from({ length: 24 }, (_, i) => {
     const hour = i % 12 === 0 ? 12 : i % 12;
@@ -50,7 +49,6 @@ export default function SchedulePage({ initialDate, closeModal }) {
       participant
     ) {
       const meeting = {
-        userId, // Added userId
         type: "Meeting", // Added type
         category: "Meeting", // Added category
         title,
@@ -66,6 +64,7 @@ export default function SchedulePage({ initialDate, closeModal }) {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
