@@ -4,6 +4,11 @@ import { useGSAP } from "@gsap/react";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import { FaTrashAlt, FaTimes } from "react-icons/fa";
+import axios from "axios";
+
+// Configure Axios defaults
+axios.defaults.withCredentials = true;
+const API_BASE_URL = "http://localhost:4110/api";
 
 const PostConfirmationModal = ({
   onClose,
@@ -12,6 +17,7 @@ const PostConfirmationModal = ({
   fileType,
   message,
   note,
+  isLoading
 }) => (
   <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
     <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md text-center relative">
@@ -46,14 +52,16 @@ const PostConfirmationModal = ({
 
       <div className="flex justify-center gap-4 mt-4">
         <button
-          className="bg-[#82334D] text-white px-4 py-2 rounded hover:bg-[#a6526b]"
+          className="bg-[#82334D] text-white px-4 py-2 rounded hover:bg-[#a6526b] disabled:opacity-50"
           onClick={onConfirm}
+          disabled={isLoading}
         >
-          Post
+          {isLoading ? 'Posting...' : 'Post'}
         </button>
         <button
-          className="bg-pink-200 text-black px-4 py-2 rounded hover:bg-pink-300"
+          className="bg-pink-200 text-black px-4 py-2 rounded hover:bg-pink-300 disabled:opacity-50"
           onClick={onClose}
+          disabled={isLoading}
         >
           Cancel
         </button>
@@ -90,9 +98,8 @@ const FullFileModal = ({ src, type, onClose }) => (
 
 const Toast = ({ message, show }) => (
   <div
-    className={`fixed top-10 left-1/2 transform -translate-x-1/2 z-[9999] transition-opacity duration-500 ${
-      show ? "opacity-100" : "opacity-0"
-    }`}
+    className={`fixed top-10 left-1/2 transform -translate-x-1/2 z-[9999] transition-opacity duration-500 ${show ? "opacity-100" : "opacity-0"
+      }`}
   >
     <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg text-sm">
       {message}
@@ -103,11 +110,14 @@ const Toast = ({ message, show }) => (
 export default function PostUpload() {
   const [filePreview, setFilePreview] = useState(null);
   const [fileType, setFileType] = useState(null);
+  const [file, setFile] = useState(null);
   const [showFullModal, setShowFullModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState("");
   const [note, setNote] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const router = useRouter();
 
   const underlineRef = useRef(null);
@@ -119,24 +129,33 @@ export default function PostUpload() {
       { scaleX: 1, duration: 0.8, ease: "power2.out" }
     );
   }, []);
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (e.g., 5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size exceeds 5MB limit");
+        return;
+      }
+
+      setFile(file);
+      setError(null);
       const reader = new FileReader();
 
       reader.onloadend = () => {
-        const base64data = reader.result; // base64 string
+        const base64data = reader.result;
 
         if (file.type.startsWith("image/")) {
           setFileType("image");
         } else if (file.type === "application/pdf") {
           setFileType("pdf");
         } else {
-          alert("Unsupported file type. Please upload an image or PDF.");
+          setError("Unsupported file type. Please upload an image or PDF.");
           return;
         }
 
-        setFilePreview(base64data); // store base64 instead of blob URL
+        setFilePreview(base64data);
       };
 
       reader.readAsDataURL(file);
@@ -146,40 +165,96 @@ export default function PostUpload() {
   const handleDelete = () => {
     setFilePreview(null);
     setFileType(null);
+    setFile(null);
+    setError(null);
   };
 
   const handleSubmit = () => {
-    if (!message || !note || !filePreview) {
-      alert("Please fill all fields and upload a file.");
+    if (!message.trim()) {
+      setError("Please enter a message");
       return;
     }
+    if (!note.trim()) {
+      setError("Please enter a note");
+      return;
+    }
+    if (!file) {
+      setError("Please upload a file");
+      return;
+    }
+
+    setError(null);
     setShowConfirm(true);
   };
 
-  const confirmPost = () => {
-    const newPost = {
-      id: Date.now(),
-      message,
-      note,
-      fileType,
-      filePreview,
-      date: new Date().toISOString(),
-    };
+  const uploadFile = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const existingPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-    existingPosts.push(newPost);
-    localStorage.setItem("posts", JSON.stringify(existingPosts));
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
-    // Reset form
-    setMessage("");
-    setNote("");
-    setFilePreview(null);
-    setFileType(null);
-    setShowConfirm(false);
-
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
+      // Adjust based on actual response structure
+      return response.data.fileUrl || response.data.url; // Ensure correct property
+    } catch (err) {
+      console.error('File upload error:', err);
+      throw new Error(err.response?.data?.message || 'File upload failed');
+    }
   };
+
+  const createPost = async (postData) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/admin/create`, postData);
+      return response.data;
+    } catch (err) {
+      console.error('Post creation error:', err);
+      throw new Error(err.response?.data?.message || 'Post creation failed');
+    }
+  };
+
+  const confirmPost = async () => {
+    setIsLoading(true);
+    try {
+      let fileUrl = '';
+      if (file) {
+        fileUrl = await uploadFile(file);
+      }
+
+      const postData = [{
+        message: message.trim(),
+        note: note.trim(),
+        attachments: fileUrl ? [{
+          fileName: file.name,
+          fileUrl: fileUrl
+        }] : []
+      }];
+
+      await createPost(postData);
+
+      // ✅ Reset all fields
+      setMessage("");
+      setNote("");
+      setFile(null);
+      setFilePreview(null);
+      setFileType(null);
+
+      // ✅ Close confirmation modal
+      setShowConfirm(false);
+
+      // ✅ Show success toast
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 3000); // Toast disappears after 3 seconds
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <>
@@ -210,6 +285,12 @@ export default function PostUpload() {
           <hr className="h-0.5 bg-gray-200 border-0" />
 
           <div className="mt-4 space-y-4">
+            {error && (
+              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+                <p>{error}</p>
+              </div>
+            )}
+
             <div className="flex items-start gap-4">
               <div className="flex flex-col gap-2 w-1/2">
                 <label className="text-lg">Message</label>
@@ -235,18 +316,19 @@ export default function PostUpload() {
 
             <div className="flex flex-col items-center justify-center w-full mt-6">
               <label className="text-lg font-semibold text-black mb-2">
-                Attachment
+                Attachment (Max 5MB)
               </label>
               <label className="w-full max-w-md cursor-pointer">
                 <div className="px-6 py-4 bg-white border-2 border-dashed border-gray-300 rounded-lg shadow-sm text-center hover:bg-gray-50 transition">
                   <p className="text-gray-600 font-medium">
-                    Click to select a file
+                    Click to select a file (Image or PDF)
                   </p>
                 </div>
                 <input
                   type="file"
                   className="hidden"
                   onChange={handleFileChange}
+                  accept="image/*,.pdf"
                 />
               </label>
 
@@ -278,6 +360,7 @@ export default function PostUpload() {
                   <button
                     className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     onClick={handleDelete}
+                    disabled={isLoading}
                   >
                     <FaTrashAlt className="inline mr-2" /> Delete File
                   </button>
@@ -289,8 +372,9 @@ export default function PostUpload() {
               <button
                 onClick={handleSubmit}
                 className="bg-[#058CBF] text-white px-6 py-3 rounded-md hover:bg-[#4ea2c3]"
+                disabled={isLoading}
               >
-                Submit Post
+                {isLoading ? 'Submitting...' : 'Submit Post'}
               </button>
             </div>
           </div>
@@ -313,6 +397,7 @@ export default function PostUpload() {
           onConfirm={confirmPost}
           message={message}
           note={note}
+          isLoading={isLoading}
         />
       )}
     </>
