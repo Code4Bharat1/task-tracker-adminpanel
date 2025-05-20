@@ -366,8 +366,6 @@ export default function ViewTimesheet() {
 
       // Transform data to Excel-friendly format
       const rows = [];
-
-      // Create header row
       const header = [
         "Date",
         "Bucket",
@@ -381,11 +379,9 @@ export default function ViewTimesheet() {
       ];
       rows.push(header);
 
-      // Process each timesheet entry
       filteredTimesheetData.forEach(day => {
         day.entries.forEach(entry => {
           const [startTime, endTime] = entry.time.split(" - ");
-
           rows.push([
             day.date,
             entry.bucket,
@@ -400,20 +396,13 @@ export default function ViewTimesheet() {
         });
       });
 
-      // Create worksheet
+      // Create worksheet and workbook
       const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-      // Create workbook
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheet");
 
       // Generate file
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array"
-      });
-
-      // Create blob and download
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
       const data = new Blob([excelBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
@@ -422,25 +411,24 @@ export default function ViewTimesheet() {
       const link = document.createElement("a");
       link.href = url;
 
-      // Generate filename
-      const dateRange = currentView === 'day'
+      // Corrected variable name here
+      const dateRangeString = currentView === 'day'
         ? selectedDate
         : `${dateRange.firstDay}_to_${dateRange.lastDay}`;
 
-      link.download = `Timesheet_${selectedEmployee?.name}_${dateRange}.xlsx`;
+      link.download = `Timesheet_${selectedEmployee?.name}_${dateRangeString}.xlsx`;
       link.click();
 
-      // Cleanup
       URL.revokeObjectURL(url);
       setIsLoading(false);
-
     } catch (error) {
       console.error("Error exporting data:", error);
       setErrorMessage("Failed to export data");
       setIsLoading(false);
     }
   };
- return (
+
+  return (
     <div className="p-4 lg:p-6 max-w-6xl mx-auto">
       {/* Employee Selector */}
       <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
