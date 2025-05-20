@@ -122,7 +122,7 @@ function Page() {
                             iconBgColor="bg-yellow-100"
                             iconColor="text-[#FFCC00]"
                             total={statusCounts.Total}
-                            percentage={100}
+                            percentage={Math.round((statusCounts.Total / (statusCounts.Total || 1)) * 100)}
                             chartColors={['#FACC15', '#E5E7EB']}
                         />
 
