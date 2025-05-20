@@ -1,16 +1,32 @@
 "use client";
+
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  IoClose,
+  IoPaperPlaneOutline,
+  IoDocumentTextOutline,
+  IoHeartOutline,
+  IoChatbubbleOutline,
+  IoBookmarkOutline,
+} from "react-icons/io5";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { IoAddCircleOutline, IoEyeOutline, IoClose } from "react-icons/io5";
+import { Document, Page, pdfjs } from "react-pdf";
 
-export default function PostHistory() {
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+export default function ClientPostHistory() {
   const [posts, setPosts] = useState([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const router = useRouter();
+  const [noteText, setNoteText] = useState("");
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [notingPostId, setNotingPostId] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
 
   const underlineRef = useRef(null);
 
@@ -24,7 +40,7 @@ export default function PostHistory() {
 
   useEffect(() => {
     const storedPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-    setPosts(storedPosts);
+    setPosts(storedPosts.sort((a, b) => new Date(b.date) - new Date(a.date)));
   }, []);
 
   const openViewModal = (post) => {
@@ -35,88 +51,180 @@ export default function PostHistory() {
   const closeViewModal = () => {
     setIsViewModalOpen(false);
     setSelectedPost(null);
+    setNumPages(null);
+    setPageNumber(1);
+  };
+
+  const openNoteModal = (postId) => {
+    setNotingPostId(postId);
+    setIsNoteModalOpen(true);
+  };
+
+  const closeNoteModal = () => {
+    setIsNoteModalOpen(false);
+    setNotingPostId(null);
+    setNoteText("");
+  };
+
+  const showToastNotification = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const submitNote = () => {
+    if (!noteText.trim()) return;
+
+    const post = posts.find((p) => p.id === notingPostId);
+    if (!post) return;
+
+    const adminMessages = JSON.parse(
+      localStorage.getItem("adminMessages") || "[]"
+    );
+
+    adminMessages.push({
+      type: "note",
+      postId: notingPostId,
+      postDate: post.date,
+      note: noteText.trim(),
+      timestamp: new Date().toISOString(),
+      user: "User",
+    });
+
+    localStorage.setItem("adminMessages", JSON.stringify(adminMessages));
+    showToastNotification("Note sent to admin!");
+    closeNoteModal();
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+  };
+
+  const changePage = (offset) => {
+    setPageNumber((prev) => Math.min(Math.max(prev + offset, 1), numPages));
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-8">
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="relative ml-4 mt-4 mb-4 w-max">
-        <h2 className="text-2xl font-bold text-black">Post History</h2>
+      <div className="relative mb-6">
+        <h2 className="text-3xl font-bold text-black">Your Posts</h2>
         <span
           ref={underlineRef}
-          className="absolute left-0 bottom-0 h-[2px] bg-[#018ABE] w-full scale-x-0"
-        ></span>
+          className="absolute left-0 bottom-0 h-1 bg-[#018ABE] w-32 scale-x-0"
+        />
       </div>
 
-      {/* Create New Post Button */}
-      <div className="flex justify-center mt-8">
-        <button
-          onClick={() => router.push("/postupload")}
-          className="bg-[#058CBF] text-white px-6 py-3 rounded-lg shadow-md hover:bg-[#69b0c9] transition-all duration-300 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-[#058CBF] focus:ring-offset-2"
-          aria-label="Create a new post"
-        >
-          <IoAddCircleOutline className="h-5 w-5" />
-          <span>Create New Post</span>
-        </button>
-      </div>
-
-      {/* Post Table */}
+      {/* Instagram-style Posts Feed */}
       <div
-        className={`max-w-6xl mx-auto mt-10 transition-all duration-300 ${isViewModalOpen ? "blur-sm" : ""
-          }`}
+        className={`space-y-8 ${
+          isViewModalOpen || isNoteModalOpen
+            ? "blur-sm pointer-events-none"
+            : ""
+        }`}
       >
         {posts.length === 0 ? (
-          <p className="text-center text-gray-600 text-lg font-medium">
-            No posts available.
-          </p>
-        ) : (
-          <div className="bg-white shadow-lg rounded-xl overflow-x-auto border border-gray-200">
-            <table className="w-full table-auto min-w-[600px]">
-              <thead>
-                <tr className="bg-gray-50 text-gray-700 text-center border-b-2 border-gray-200 uppercase text-xs tracking-wider">
-                  <th className="py-4 px-6 w-16">ID</th>
-                  <th className="py-4 px-6 w-32">Date</th>
-                  <th className="py-4 px-6 w-48">Message Preview</th>
-                  <th className="py-4 px-6 w-48">Note Preview</th>
-                  <th className="py-4 px-6 w-24">Action</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-600 text-sm">
-                {posts.map((post, index) => (
-                  <tr
-                    key={post.id}
-                    className={`border-b border-gray-100 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      } hover:bg-[#e6f4fa] transition-colors duration-200`}
-                  >
-                    <td className="py-4 px-6 border-r border-gray-100 text-center">{post.id}</td>
-                    <td className="py-4 px-6 border-r border-gray-100 text-center">
-                      {new Date(post.date).toLocaleString()}
-                    </td>
-                    <td className="py-4 px-6 border-r border-gray-100 truncate text-center">
-                      {post.message
-                        ? post.message.slice(0, 30) + (post.message.length > 30 ? "..." : "")
-                        : "No message"}
-                    </td>
-                    <td className="py-4 px-6 border-r border-gray-100 truncate text-center">
-                      {post.note
-                        ? post.note.slice(0, 30) + (post.note.length > 30 ? "..." : "")
-                        : "No note"}
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <button
-                        onClick={() => openViewModal(post)}
-                        className="bg-[#058CBF] text-white px-4 py-2 rounded-lg hover:bg-[#69b0c9] transition-colors duration-300 flex items-center justify-center mx-auto space-x-2 focus:outline-none focus:ring-2 focus:ring-[#058CBF] focus:ring-offset-2"
-                        aria-label={`View post ${post.id}`}
-                      >
-                        <IoEyeOutline className="h-4 w-4" />
-                        <span>View</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col items-center justify-center bg-white rounded-xl shadow-md p-12 border border-gray-300">
+            <div className="text-7xl mb-4 animate-pulse">📷</div>
+            <p className="text-center text-gray-600 text-lg font-medium">
+              No posts yet. Start sharing your moments!
+            </p>
           </div>
+        ) : (
+          posts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+            >
+              {/* Post Header: Avatar + Username + Date */}
+              <div className="flex items-center px-4 py-3 space-x-3 border-b border-gray-200">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold select-none text-lg">
+                  {post.id.toString().charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">
+                    User{post.id} {/* You can replace with actual username */}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatDate(post.date)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Post Media */}
+              <div
+                onClick={() => openViewModal(post)}
+                className="cursor-pointer bg-gray-100 flex items-center justify-center relative overflow-hidden max-h-[500px]"
+              >
+                {post.image ? (
+                  post.image.toLowerCase().endsWith(".pdf") ? (
+                    <div className="flex flex-col items-center justify-center w-full h-64 p-6 text-gray-500">
+                      <IoDocumentTextOutline className="text-7xl mb-2" />
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold select-none">
+                        PDF Document
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={post.image}
+                      alt={`Post ${post.id}`}
+                      className="w-full max-h-[500px] object-cover transition-transform duration-500 hover:scale-105"
+                      onError={(e) => {
+                        e.target.src = "/placeholder-image.jpg";
+                        e.target.classList.add("object-contain", "p-6");
+                      }}
+                    />
+                  )
+                ) : (
+                  <p className="text-center text-gray-500 p-12">
+                    No image available
+                  </p>
+                )}
+              </div>
+
+              {/* Post Actions like Instagram */}
+              <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200">
+                <div className="flex space-x-4 text-gray-600">
+                  <button
+                    aria-label="Like"
+                    className="hover:text-red-500 transition"
+                  >
+                    <IoHeartOutline size={24} />
+                  </button>
+                  <button
+                    aria-label="Comment"
+                    onClick={() => openNoteModal(post.id)}
+                    className="hover:text-blue-600 transition"
+                  >
+                    <IoChatbubbleOutline size={24} />
+                  </button>
+                  <button
+                    aria-label="Share"
+                    className="hover:text-green-600 transition"
+                  >
+                    <IoPaperPlaneOutline size={24} />
+                  </button>
+                </div>
+                <button
+                  aria-label="Save"
+                  className="hover:text-yellow-600 transition"
+                >
+                  <IoBookmarkOutline size={24} />
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
@@ -124,66 +232,137 @@ export default function PostHistory() {
       <AnimatePresence>
         {isViewModalOpen && selectedPost && (
           <motion.div
-            className="fixed inset-0 flex items-center justify-center z-50 bg-opacity-60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4"
+            onClick={closeViewModal}
           >
             <motion.div
-              className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg relative"
-              initial={{ scale: 0.85, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.85, y: 50 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="relative max-w-4xl w-full max-h-[80vh] overflow-auto rounded-xl bg-white shadow-lg p-6"
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={closeViewModal}
-                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#058CBF] rounded-full p-1"
+                className="absolute top-3 right-3 text-gray-600 hover:text-gray-900"
                 aria-label="Close modal"
               >
-                <IoClose className="h-6 w-6" />
+                <IoClose size={28} />
               </button>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-                Post Details
-              </h2>
-              <div className="space-y-5">
-                <p className="text-gray-700 text-sm">
-                  <strong className="font-semibold">ID:</strong> {selectedPost.id}
-                </p>
-                <p className="text-gray-700 text-sm">
-                  <strong className="font-semibold">Date:</strong>{" "}
-                  {new Date(selectedPost.date).toLocaleString()}
-                </p>
-                {selectedPost.image ? (
-                  <div>
-                    <strong className="font-semibold text-gray-700 text-sm">Image:</strong>
-                    <img
-                      src={selectedPost.image}
-                      alt="Post"
-                      className="w-full max-w-sm h-48 object-cover rounded-lg mt-2 mx-auto"
-                      onError={(e) => (e.target.src = "/placeholder-image.jpg")}
-                    />
+
+              {selectedPost.image ? (
+                selectedPost.image.toLowerCase().endsWith(".pdf") ? (
+                  <div className="flex flex-col items-center">
+                    <Document
+                      file={selectedPost.image}
+                      onLoadSuccess={onDocumentLoadSuccess}
+                      loading={<p>Loading PDF...</p>}
+                      error={<p>Failed to load PDF.</p>}
+                    >
+                      <Page pageNumber={pageNumber} width={600} />
+                    </Document>
+                    <div className="mt-4 flex space-x-3">
+                      <button
+                        onClick={() => changePage(-1)}
+                        disabled={pageNumber <= 1}
+                        className="px-4 py-2 rounded bg-blue-600 text-white disabled:bg-gray-400"
+                      >
+                        Previous
+                      </button>
+                      <p className="self-center text-gray-700">
+                        Page {pageNumber} / {numPages || "-"}
+                      </p>
+                      <button
+                        onClick={() => changePage(1)}
+                        disabled={pageNumber >= numPages}
+                        className="px-4 py-2 rounded bg-blue-600 text-white disabled:bg-gray-400"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-gray-600 text-sm">No image available</p>
-                )}
-                <p className="text-gray-700 text-sm">
-                  <strong className="font-semibold">Message:</strong>{" "}
-                  {selectedPost.message || "No message"}
-                </p>
-                <p className="text-gray-700 text-sm">
-                  <strong className="font-semibold">Note:</strong>{" "}
-                  {selectedPost.note || "No note"}
-                </p>
-              </div>
-              <button
-                onClick={closeViewModal}
-                className="mt-6 w-full bg-[#058CBF] text-white py-2 px-4 rounded-lg hover:bg-[#69b0c9] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#058CBF] focus:ring-offset-2"
-              >
-                Close
-              </button>
+                  <img
+                    src={selectedPost.image}
+                    alt="Selected post"
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                    onError={(e) => {
+                      e.target.src = "/placeholder-image.jpg";
+                    }}
+                  />
+                )
+              ) : (
+                <p className="text-center text-gray-500">No image available</p>
+              )}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Note Modal */}
+      <AnimatePresence>
+        {isNoteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+            onClick={closeNoteModal}
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold mb-3">
+                Send a Note to Admin
+              </h3>
+              <textarea
+                rows={4}
+                className="w-full border border-gray-300 rounded-md p-2 resize-none focus:outline-blue-400"
+                placeholder="Write your note here..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+              />
+              <div className="mt-4 flex justify-end space-x-3">
+                <button
+                  onClick={closeNoteModal}
+                  className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitNote}
+                  disabled={!noteText.trim()}
+                  className={`px-4 py-2 rounded text-white ${
+                    noteText.trim()
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-blue-300 cursor-not-allowed"
+                  }`}
+                >
+                  Send
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            {toastMessage}
           </motion.div>
         )}
       </AnimatePresence>
