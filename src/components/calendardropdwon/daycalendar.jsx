@@ -30,7 +30,7 @@ export default function Calendar() {
   const [todayKey, setTodayKey] = useState("");
   const [eventDates, setEventDates] = useState({});
   const underlineRef = useRef(null);
-
+  const calType = "Personal"; // Assuming this is the type of calendar you want to fetch
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -42,7 +42,7 @@ export default function Calendar() {
     const fetchCalendarData = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/`,{
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/${calType}`,{
             method: "GET",
             credentials: "include",
           }

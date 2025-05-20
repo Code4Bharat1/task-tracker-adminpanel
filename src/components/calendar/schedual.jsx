@@ -59,6 +59,7 @@ export default function SchedulePage({ initialDate, closeModal }) {
         participants: [participant],
         reminder: false,
         remindBefore: 15,
+        calType : "Personal"
       };
 
       try {

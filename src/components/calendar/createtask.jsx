@@ -50,7 +50,8 @@ export default function TaskForm({ onSave, onClose, selectedDate }) {
       time: startTime,
       category: selectedCategory,
       reminder: true, // Assuming reminder is always true with time selection
-      remindBefore: parseInt(remindBefore, 10)
+      remindBefore: parseInt(remindBefore, 10),
+      calType: "Personal"
     };
 
     try {

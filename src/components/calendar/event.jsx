@@ -95,7 +95,8 @@ export default function TaskPage() {
         title,
         description,
         date: formattedDate,
-        time: formattedTime
+        time: formattedTime,
+        calType: "Personal"
       };
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
