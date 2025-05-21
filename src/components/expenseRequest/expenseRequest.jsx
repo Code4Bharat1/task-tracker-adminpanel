@@ -572,7 +572,7 @@ export default function ExpenseRequest() {
 
           {/* Rejection Modal */}
           {showRejectModal && selectedExpense && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden">
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">
@@ -619,7 +619,7 @@ export default function ExpenseRequest() {
 
           {/* Delete Confirmation Modal */}
           {showDeleteConfirmModal && selectedExpense && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-xs  bg-opacity-50 flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden">
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">
