@@ -31,39 +31,39 @@ export default function AddDocument() {
       </h1>
 
       <div className="bg-white rounded-xl shadow p-8 md:mx-10 border border-black justify-center items-center">
-  <div className="grid grid-cols-2 gap-8 mb-8 ">
+        <div className="grid grid-cols-2 gap-8 mb-8 ">
 
-        <div>
-  <label className="block font-medium mb-2">First Name :</label>
-  <input
-    type="text"
-    className="w-full border border-[#BFB8B8] rounded-md px-4 py-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-    value={firstName}
-    onChange={(e) => {
-      const value = e.target.value;
-      if (/^[a-zA-Z\s]*$/.test(value)) {
-        setFirstName(value);
-      }
-    }}
-    placeholder="Enter first name"
-  />
-</div>
+          <div>
+            <label className="block font-medium mb-2">First Name :</label>
+            <input
+              type="text"
+              className="w-full border border-[#BFB8B8] rounded-md px-4 py-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={firstName}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^[a-zA-Z\s]*$/.test(value)) {
+                  setFirstName(value);
+                }
+              }}
+              placeholder="Enter first name"
+            />
+          </div>
 
-<div>
-  <label className="block font-medium mb-2">Last Name :</label>
-  <input
-    type="text"
-    className="w-full border border-[#BFB8B8] rounded-md px-4 py-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-    value={lastName}
-    onChange={(e) => {
-      const value = e.target.value;
-      if (/^[a-zA-Z\s]*$/.test(value)) {
-        setLastName(value);
-      }
-    }}
-    placeholder="Enter last name"
-  />
-</div>
+          <div>
+            <label className="block font-medium mb-2">Last Name :</label>
+            <input
+              type="text"
+              className="w-full border border-[#BFB8B8] rounded-md px-4 py-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={lastName}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^[a-zA-Z\s]*$/.test(value)) {
+                  setLastName(value);
+                }
+              }}
+              placeholder="Enter last name"
+            />
+          </div>
 
         </div>
 
@@ -131,39 +131,39 @@ export default function AddDocument() {
 
             {/* Uploaded Document Section */}
             <div className="mt-6">
-  <label className="block font-medium mb-2">Uploaded Document :</label>
-  {uploadedFile ? (
-    <div className="flex items-center justify-center space-x-3">
-      <input
-        type="text"
-        readOnly
-        value={uploadedFile.name}
-        className="border border-gray-300 bg-white text-gray-600 rounded-lg px-4 py-2 shadow-inner w-52 text-center"
-      />
-      <div className="flex space-x-2">
-        <button onClick={handleDelete} title="Delete">
-          <MdDelete size={22} />
-        </button>
-        <a
-          href={URL.createObjectURL(uploadedFile)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-gray-600 hover:text-blue-500"
-          title="View"
-        >
-          <MdPreview size={22} />
-        </a>
-      </div>
-    </div>
-  ) : (
-    <input
-      type="text"
-      readOnly
-      value="No file uploaded"
-      className="border border-[#877575] bg-[#D9D9D9] text-gray-600 rounded-lg px-4 py-2 shadow-inner w-60 text-center"
-    />
-  )}
-</div>
+              <label className="block font-medium mb-2">Uploaded Document :</label>
+              {uploadedFile ? (
+                <div className="flex items-center justify-center space-x-3">
+                  <input
+                    type="text"
+                    readOnly
+                    value={uploadedFile.name}
+                    className="border border-gray-300 bg-white text-gray-600 rounded-lg px-4 py-2 shadow-inner w-52 text-center"
+                  />
+                  <div className="flex space-x-2">
+                    <button onClick={handleDelete} title="Delete">
+                      <MdDelete size={22} />
+                    </button>
+                    <a
+                      href={URL.createObjectURL(uploadedFile)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-600 hover:text-blue-500"
+                      title="View"
+                    >
+                      <MdPreview size={22} />
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  readOnly
+                  value="No file uploaded"
+                  className="border border-[#877575] bg-[#D9D9D9] text-gray-600 rounded-lg px-4 py-2 shadow-inner w-60 text-center"
+                />
+              )}
+            </div>
 
           </div>
         </div>
