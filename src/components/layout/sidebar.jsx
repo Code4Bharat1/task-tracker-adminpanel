@@ -24,7 +24,7 @@ const menuItems = [
   { label: "View Attendance", icon: CalendarDays, href: "/viewattendance" },
   { label: "View TimeSheet", icon: Clock, href: "/viewtimesheet" },
   { label: "Calendar", icon: FileText, href: "/calendar" },
-  { label: "Document", icon: FileCheck, href: "/document" },
+  { label: "Document", icon: FileCheck, href: "/viewdocument" },
   { label: "Leave", icon: MailCheck, href: "/leavetable" },
   { label: "Salary", icon: Coins, href: "/salary" },
   { label: "Expense", icon: Receipt, href: "/expenseRequest" },
