@@ -70,7 +70,7 @@ export default function Sidebar() {
               href={item.href}
               className={`
                 flex items-center gap-2 px-2 py-2 rounded-md transition duration-200
-                ${active ? "bg-white text-sky-700 font-semibold" : "hover:bg-white hover:text-sky-700"}
+                ${active ? "bg-white text-sky-700 font-semibold" : "hover:bg-white/30 hover:text-white"}
               `}
             >
               <item.icon className="w-5 h-5" />
