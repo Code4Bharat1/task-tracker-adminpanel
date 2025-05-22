@@ -16,9 +16,12 @@ const PostHistory = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get('http://localhost:4110/api/admin/getAllPosts', {
-          withCredentials: true
-        });
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/getAllPosts`,
+          {
+            withCredentials: true
+          }
+        );
         setPosts(response.data.posts);
       } catch (err) {
         setError(err.message || 'Failed to fetch posts');
@@ -29,6 +32,7 @@ const PostHistory = () => {
 
     fetchPosts();
   }, []);
+
 
   const formatDate = (dateString) => {
     const options = {
@@ -50,14 +54,15 @@ const PostHistory = () => {
   const downloadFile = async (fileUrl, fileName, e) => {
     e.stopPropagation();
     try {
-      // Create a server-side proxy route to handle the download instead of direct client-side request
-      const response = await axios.post('http://localhost:4110/api/admin/proxyDownload', {
-        fileUrl,
-        fileName
-      }, {
-        withCredentials: true,
-        responseType: 'blob'
-      });
+      // Use environment variable for the backend URL
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/proxyDownload`,
+        { fileUrl, fileName },
+        {
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -67,13 +72,13 @@ const PostHistory = () => {
       link.click();
       link.remove();
 
-      // Clean up the URL object
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error downloading file:', err);
       alert('Failed to download file. Please try again later.');
     }
   };
+
 
   // Alternative downloadFile option if you can't create a proxy route
   const directDownloadFile = async (fileUrl, fileName, e) => {

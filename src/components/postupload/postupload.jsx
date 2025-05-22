@@ -7,8 +7,6 @@ import { FaTrashAlt, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
 // Configure Axios defaults
-axios.defaults.withCredentials = true;
-const API_BASE_URL = "http://localhost:4110/api";
 
 const PostConfirmationModal = ({
   onClose,
@@ -192,11 +190,17 @@ export default function PostUpload() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/upload`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          withCredentials: true
         }
-      });
+      );
+
 
       // Adjust based on actual response structure
       return response.data.fileUrl || response.data.url; // Ensure correct property

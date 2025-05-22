@@ -16,7 +16,11 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [userData, setUserData] = useState({ fullName: "", email: "" });
+  const [userData, setUserData] = useState({
+    fullName: "",
+    email: "",
+    photoUrl: "" // Added photoUrl to state
+  });
   const notifications = [];
 
   const router = useRouter();
@@ -28,6 +32,11 @@ export default function Navbar() {
     router.push("/");
   };
 
+  // Function to get profile image with fallback
+  const getProfileImage = () => {
+    return userData.photoUrl || "/profile.png";
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -35,7 +44,11 @@ export default function Navbar() {
           `${process.env.NEXT_PUBLIC_BACKEND_API}/profile/getProfileAdmin`,
           { withCredentials: true }
         );
-        setUserData(response.data);
+        setUserData({
+          fullName: response.data.fullName || "",
+          email: response.data.email || "",
+          photoUrl: response.data.photoUrl || "" // Include photoUrl in state
+        });
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         toast.error("Failed to fetch user data.");
@@ -105,23 +118,21 @@ export default function Navbar() {
 
         {/* Profile Menu */}
         <div className="relative">
-          <Image
-            src="/profile.png"
+          {/* Use regular img tag for Cloudinary images */}
+          <img
+            src={getProfileImage()}
             alt="Profile"
-            width={40}
-            height={40}
-            className="object-contain cursor-pointer rounded-full"
+            className="w-10 h-10 object-cover cursor-pointer rounded-full border-2 border-white"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           />
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-30">
               <div className="p-4 flex items-center gap-3">
-                <Image
-                  src="/profile.png"
-                  width={48}
-                  height={48}
+                {/* Profile image in dropdown menu */}
+                <img
+                  src={getProfileImage()}
                   alt="Profile picture"
-                  className="rounded-full"
+                  className="w-12 h-12 object-cover rounded-full"
                 />
                 <div>
                   <div className="font-semibold">

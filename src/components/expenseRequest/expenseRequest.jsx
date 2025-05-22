@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Eye, MoreHorizontal, Check, X, FileText, Trash2, Filter } from 'lucide-react';
+import axios from 'axios';
 
 export default function ExpenseRequest() {
   // State for expenses data
@@ -46,19 +47,17 @@ export default function ExpenseRequest() {
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const response = await fetch('http://localhost:4110/api/expense/getAllExpense', {
-          credentials: 'include' // for sending cookies
-        });
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_API}/expense/getAllExpense`,
+          {
+            withCredentials: true
+          }
+        );
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch expenses');
-        }
-
-        const data = await response.json();
-        setExpenses(data.data);
-        setFilteredExpenses(data.data);
+        setExpenses(response.data.data);
+        setFilteredExpenses(response.data.data);
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }
