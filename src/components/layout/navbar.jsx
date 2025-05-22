@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import { FiSettings } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IoVideocamOutline } from "react-icons/io5";
@@ -58,16 +58,16 @@ export default function Navbar() {
   }, []);
 
   return (
-    <div className="w-full px-8 py-4 flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-[#018ABE] via-[#65B7D4] to-[#E0E2E3] gap-4 sm:gap-0 relative">
+    <div className="w-full px-8 py-4 flex flex-col sm:flex-row justify-end items-center bg-gradient-to-r from-[#018ABE] via-[#65B7D4] to-[#E0E2E3] gap-4 sm:gap-0 relative">
       {/* Search Bar */}
-      <div className="flex items-center bg-white rounded-full px-4 py-2 w-full sm:w-[550px]">
+      {/* <div className="flex items-center bg-white rounded-full px-4 py-2 w-full sm:w-[550px]">
         <FaSearch className="text-gray-500 mr-2" />
         <input
           type="text"
           placeholder="Search by Team Member Name"
           className="w-full outline-none bg-transparent text-sm"
         />
-      </div>
+      </div> */}
 
       {/* Icons */}
       <div className="flex items-center gap-x-10 relative">
@@ -147,8 +147,21 @@ export default function Navbar() {
                     <FaUser className="text-gray-600" />
                     <span>View Profile</span>
                   </div>
+                </Link><div className="my-1">
+                </div>
+                <Link href="/setting">
+                  <div
+                    onClick={() => handleProfileAction()}
+                    className="w-full px-4 py-2 text-left flex items-center space-x-3 hover:bg-gray-100 cursor-pointer"
+                  >
+                    <FiSettings className="text-gray-600" />
+                    <span>Settings</span>
+                  </div>
                 </Link>
-                <div className="border-t my-1"></div>
+
+
+                <div className="my-1"></div>
+                
                 <div
                   onClick={handleLogout}
                   className="px-4 py-2 flex items-center gap-3 hover:bg-gray-100 text-red-500 cursor-pointer"
