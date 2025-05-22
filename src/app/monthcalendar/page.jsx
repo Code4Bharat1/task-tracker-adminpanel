@@ -1,10 +1,9 @@
 
 import React from 'react'
 
-
 import Navbar from '@/components/layout/navbar';
 import Sidebar from '@/components/layout/sidebar';
-import CalendarPage from '@/components/calendar/calendar';
+import CalendarPage from '@/components/monthcalendar/calendar';
 
 
 
@@ -26,7 +25,7 @@ export default function Home() {
 
         {/* Page Content */}
         <main className=" px-6 py-6 overflow-y-auto overflow-x-hidden">
-          <CalendarPage />
+          <CalendarPage/>
         </main>
 
 

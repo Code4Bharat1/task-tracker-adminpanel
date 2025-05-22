@@ -2,7 +2,8 @@
 import React from 'react'
 import Sidebar from '@/components/layout/sidebar';
 import Navbar from '@/components/layout/navbar';
-import Yearcalendar from '@/components/calendardropdwon/yearcalendar';
+import Yearcalendar from '@/components/yearcalendar/yearcalendar';
+
 export default function Home() {
     return (
         <div className="h-screen overflow-hidden"> {/* Prevent page scroll */}

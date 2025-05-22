@@ -23,7 +23,7 @@ const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "View Attendance", icon: CalendarDays, href: "/viewattendance" },
   { label: "View TimeSheet", icon: Clock, href: "/viewtimesheet" },
-  { label: "Calendar", icon: FileText, href: "/calendar" },
+  { label: "Calendar", icon: FileText, href: "/monthcalendar" },
   { label: "Document", icon: FileCheck, href: "/viewdocument" },
   { label: "Leave", icon: MailCheck, href: "/leavetable" },
   { label: "Salary", icon: Coins, href: "/salary" },

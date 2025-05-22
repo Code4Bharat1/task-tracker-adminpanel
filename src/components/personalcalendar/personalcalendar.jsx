@@ -56,11 +56,11 @@ export default function PersonalCalendar() {
     setSelectedOption(value);
 
     switch (value) {
-      case "personal":
+      case "personal Calendar ":
         router.push("/personalcalendar");
         break;
       case "month":
-        router.push("/monthlycalendar");
+        router.push("/monthcalendar");
         break;
       case "year":
         router.push("/yearcalendar");
