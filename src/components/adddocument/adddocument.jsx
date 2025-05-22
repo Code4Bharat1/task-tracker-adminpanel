@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useRef } from 'react';
 import { MdDelete, MdPreview } from 'react-icons/md';
-import { Toaster, toast } from 'react-hot-toast'; // ✅ Toast import
+import { Toaster, toast } from 'react-hot-toast';
+import { Eye  } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const documentOptions = ['Adhar card', 'Passport photo', 'Pan card', 'Resume'];
 
@@ -11,28 +13,82 @@ export default function AddDocument() {
   const [docName, setDocName] = useState(documentOptions[0]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const router = useRouter();
+  
 
   const fileInputRef = useRef(null);
 
+  // File Change Handler
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
       setUploadedFile(e.target.files[0]);
     }
   };
 
+  // Delete File Handler
   const handleDelete = () => setUploadedFile(null);
+
+  // Save Document Handler
+  const handleSaveDocument = async () => {
+    if (!firstName || !lastName || !uploadedFile || !docName) {
+      toast.error('Please fill in all fields before saving.');
+      return;
+    }
+
+    // Create FormData Object
+    const formData = new FormData();
+    formData.append('firstName', firstName);
+    formData.append('lastName', lastName);
+    formData.append('documentName', docName);
+    formData.append('documentFile', uploadedFile);
+
+    try {
+      const response = await fetch('http://localhost:4110/api/adddocument/adminaddDocument', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Document saved successfully!');
+        console.log('Response from server:', data);
+
+        // Clear form after success
+        setFirstName('');
+        setLastName('');
+        setDocName(documentOptions[0]);
+        setUploadedFile(null);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to save document.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Server error, please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white px-4 py-8">
-      <Toaster /> {/* ✅ Toast container */}
-
+      <Toaster /> {/* Toast container */}
+      <div className='flex items-center justify-between'>
       <h1 className="text-4xl font-bold mb-8">
         <span className="border-b-4 border-red-500 pb-1 ml-8">Add Document</span>
       </h1>
 
-      <div className="bg-white rounded-xl shadow p-8 md:mx-10 border border-black justify-center items-center">
-        <div className="grid grid-cols-2 gap-8 mb-8 ">
+         {/* Add Document Button */}
+          <button
+            onClick={() => router.push('/viewdocument')}
+            className="bg-[#018ABE] cursor-pointer hover:bg-[#0176a1] text-white px-4 mr-7 py-2 rounded shadow flex items-center gap-2 text-sm font-medium"
+          >
+            <Eye  size={16} />
+            View Document
+          </button>
 
+      </div>
+
+      <div className="bg-white rounded-xl shadow p-8 md:mx-10 border border-black justify-center items-center">
+        <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
             <label className="block font-medium mb-2">First Name :</label>
             <input
@@ -64,11 +120,9 @@ export default function AddDocument() {
               placeholder="Enter last name"
             />
           </div>
-
         </div>
 
         <div className="grid grid-cols-2 gap-8">
-          {/* Dropdown Section */}
           <div>
             <label className="block font-medium mb-2">Document Name :</label>
             <div className="relative w-full">
@@ -78,15 +132,6 @@ export default function AddDocument() {
                 onClick={() => setShowDropdown((v) => !v)}
               >
                 {docName}
-                <svg
-                  className="w-4 h-4 ml-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
 
               {showDropdown && (
@@ -108,77 +153,55 @@ export default function AddDocument() {
             </div>
           </div>
 
-          {/* File Upload Section */}
           <div>
             <label className="block font-medium mb-2">Upload Document :</label>
-            <div className="flex items-center bg-[#D9D9D9] border border-[#877575] rounded-md px-3 py-2 shadow w-60">
-              <label className="file-label relative cursor-pointer">
-                <span className="text-sm text-black bg-white border border-gray-300 px-3 py-1 rounded shadow mr-3">
+            <div className="mb-3">
+              <div className="flex">
+                <label className="cursor-pointer bg-gray-200 text-black border border-gray-300 rounded-l-md px-4 py-2">
                   Choose File
-                </span>
-                <input
-                  id="attachment"
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </label>
-              <span className="text-black text-sm truncate">
-                {uploadedFile ? uploadedFile.name : 'No File chosen'}
-              </span>
-            </div>
-
-            {/* Uploaded Document Section */}
-            <div className="mt-6">
-              <label className="block font-medium mb-2">Uploaded Document :</label>
-              {uploadedFile ? (
-                <div className="flex items-center justify-center space-x-3">
                   <input
-                    type="text"
-                    readOnly
-                    value={uploadedFile.name}
-                    className="border border-gray-300 bg-white text-gray-600 rounded-lg px-4 py-2 shadow-inner w-52 text-center"
+                    id="attachment"
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                  <div className="flex space-x-2">
-                    <button onClick={handleDelete} title="Delete">
-                      <MdDelete size={22} />
-                    </button>
-                    <a
-                      href={URL.createObjectURL(uploadedFile)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-600 hover:text-blue-500"
-                      title="View"
-                    >
-                      <MdPreview size={22} />
-                    </a>
-                  </div>
+                </label>
+                <div className="bg-gray-100 border border-gray-300 border-l-0 rounded-r-md px-4 py-2 flex-grow">
+                  {uploadedFile ? uploadedFile.name : 'No File chosen'}
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  readOnly
-                  value="No file uploaded"
-                  className="border border-[#877575] bg-[#D9D9D9] text-gray-600 rounded-lg px-4 py-2 shadow-inner w-60 text-center"
-                />
-              )}
+              </div>
             </div>
 
+            {uploadedFile && (
+              <div className="mt-2">
+                <label className="block font-medium mb-2">Uploaded Document :</label>
+                <div className="flex">
+                  <div className="bg-gray-100 border border-gray-300 rounded-l-md px-4 py-2 flex-grow">
+                    {uploadedFile.name}
+                  </div>
+                  <button onClick={handleDelete} className="bg-white border cursor-pointer border-gray-300 border-l-0 rounded-r-md px-2 py-2" title="Delete">
+                    <MdDelete size={20} />
+                  </button>
+                  <a
+                    href={URL.createObjectURL(uploadedFile)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white border border-gray-300 border-l-0 rounded-r-md px-2 py-2"
+                    title="View"
+                  >
+                    <MdPreview size={20} />
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Save Button with Validation */}
         <div className="flex justify-center mt-14">
           <button
-            className="bg-[#018ABE] text-white font-semibold px-12 py-3 rounded-lg shadow hover:bg-[#01739C] transition"
-            onClick={() => {
-              if (!firstName || !lastName || !uploadedFile || !docName) {
-                toast.error('Please fill in all fields before saving.');
-                return;
-              }
-              toast.success('Document saved successfully!');
-            }}
+            className="bg-[#018ABE] text-white cursor-pointer font-semibold px-12 py-3 rounded-lg shadow hover:bg-[#01739C] transition"
+            onClick={handleSaveDocument}
           >
             Save
           </button>
