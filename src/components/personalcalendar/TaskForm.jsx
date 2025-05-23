@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CalendarIcon, ChevronDown } from "lucide-react";
+import { CalendarIcon, ChevronDown, CheckSquare } from "lucide-react";
 
-const TaskForm = ({ formData, handleInputChange }) => {
+const TaskForm = ({ formData, handleInputChange, onSubmit, onCancel }) => {
   const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false);
 
   // Ref for auto-close timer
@@ -150,13 +150,38 @@ const TaskForm = ({ formData, handleInputChange }) => {
       <textarea
         name="description"
         placeholder="Add Task Description"
-        className="w-full h-16 border rounded-md p-2 mb-4 bg-blue-50 focus:outline-none resize-none"
+        className="w-full h-16 border rounded-md p-2 mb-6 bg-blue-50 focus:outline-none resize-none"
         value={formData.description}
         onChange={handleInputChange}
       ></textarea>
 
       {/* Hidden field to ensure tasks are properly categorized */}
       <input type="hidden" name="category" value="Daily Task" />
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          type="button"
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="py-2 px-6 rounded-lg text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-30"
+          style={{
+            backgroundColor: "#3b82f6",
+            boxShadow: "0 4px 15px #3b82f630",
+          }}
+          onClick={onSubmit}
+        >
+          <div className="flex items-center justify-center">
+            <CheckSquare size={18} color="white" className="mr-2" />
+            <span>Create Task</span>
+          </div>
+        </button>
+      </div>
     </div>
   );
 };
