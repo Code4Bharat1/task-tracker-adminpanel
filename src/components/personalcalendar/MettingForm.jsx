@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CalendarIcon, Mail, FileText, ChevronDown } from "lucide-react";
+import { CalendarIcon, Mail, FileText, ChevronDown, Users } from "lucide-react";
 
-const MeetingForm = ({ formData, handleInputChange }) => {
+const MeetingForm = ({ formData, handleInputChange, onSubmit, onCancel }) => {
   const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false);
   const [isEndTimeDropdownOpen, setIsEndTimeDropdownOpen] = useState(false);
   const [isEmailDropdownOpen, setIsEmailDropdownOpen] = useState(false);
@@ -40,6 +40,15 @@ const MeetingForm = ({ formData, handleInputChange }) => {
     { value: "grace@example.com", label: "grace@example.com" },
     { value: "henry@example.com", label: "henry@example.com" },
   ];
+
+  // Meeting color (red for meetings)
+  const getMeetingColor = () => "#DC2626"; // Red color for meetings
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodaysDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
 
   // Auto-close functions
   const startTimeAutoClose = () => {
@@ -94,7 +103,7 @@ const MeetingForm = ({ formData, handleInputChange }) => {
     } else {
       clearTimeAutoClose();
     }
-    
+
     return () => clearTimeAutoClose();
   }, [isTimeDropdownOpen]);
 
@@ -104,7 +113,7 @@ const MeetingForm = ({ formData, handleInputChange }) => {
     } else {
       clearEndTimeAutoClose();
     }
-    
+
     return () => clearEndTimeAutoClose();
   }, [isEndTimeDropdownOpen]);
 
@@ -114,7 +123,7 @@ const MeetingForm = ({ formData, handleInputChange }) => {
     } else {
       clearEmailAutoClose();
     }
-    
+
     return () => clearEmailAutoClose();
   }, [isEmailDropdownOpen]);
 
@@ -155,6 +164,27 @@ const MeetingForm = ({ formData, handleInputChange }) => {
     });
   };
 
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+    const today = getTodaysDate();
+
+    // Check if selected date is in the past
+    if (selectedDate < today) {
+      // Don't update the date if it's in the past
+      return;
+    }
+
+    handleInputChange(e);
+  };
+
+  // Check if the current date is in the past
+  const isDateInPast = () => {
+    if (!formData.date) return false;
+    const selectedDate = formData.date.split("-").reverse().join("-"); // Convert DD-MM-YYYY to YYYY-MM-DD
+    const today = getTodaysDate();
+    return selectedDate < today;
+  };
+
   const selectedTimeLabel = formData.time
     ? timeOptions.find((option) => option.value === formData.time)?.label ||
       "Start"
@@ -181,16 +211,28 @@ const MeetingForm = ({ formData, handleInputChange }) => {
         className="w-full border-b border-gray-300 py-2 mb-4 focus:outline-none"
         value={formData.title}
         onChange={handleInputChange}
+        disabled={isDateInPast()}
       />
 
       <div className="flex items-center mb-4">
         <input
           type="date"
           name="date"
-          className="border-b border-gray-300 py-2 focus:outline-none"
-          value={formData.date.split("-").reverse().join("-")}
-          onChange={handleInputChange}
+          className={`border-b border-gray-300 py-2 focus:outline-none ${
+            isDateInPast() ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
+          value={
+            formData.date ? formData.date.split("-").reverse().join("-") : ""
+          }
+          onChange={handleDateChange}
+          min={getTodaysDate()}
+          disabled={isDateInPast()}
         />
+        {isDateInPast() && (
+          <span className="ml-2 text-sm text-red-500">
+            Past dates are not allowed
+          </span>
+        )}
       </div>
 
       {/* Time Selection Row */}
@@ -207,11 +249,15 @@ const MeetingForm = ({ formData, handleInputChange }) => {
           >
             <button
               type="button"
-              className="w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between"
+              className={`w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between ${
+                isDateInPast() ? "cursor-not-allowed opacity-50" : ""
+              }`}
               onClick={() => {
+                if (isDateInPast()) return;
                 clearTimeAutoClose();
                 setIsTimeDropdownOpen(!isTimeDropdownOpen);
               }}
+              disabled={isDateInPast()}
             >
               <span className={formData.time ? "text-black" : "text-gray-500"}>
                 {selectedTimeLabel}
@@ -224,8 +270,8 @@ const MeetingForm = ({ formData, handleInputChange }) => {
               />
             </button>
 
-            {isTimeDropdownOpen && (
-              <div 
+            {isTimeDropdownOpen && !isDateInPast() && (
+              <div
                 className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1"
                 onMouseEnter={clearTimeAutoClose}
                 onMouseLeave={startTimeAutoClose}
@@ -261,11 +307,15 @@ const MeetingForm = ({ formData, handleInputChange }) => {
           >
             <button
               type="button"
-              className="w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between"
+              className={`w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between ${
+                isDateInPast() ? "cursor-not-allowed opacity-50" : ""
+              }`}
               onClick={() => {
+                if (isDateInPast()) return;
                 clearEndTimeAutoClose();
                 setIsEndTimeDropdownOpen(!isEndTimeDropdownOpen);
               }}
+              disabled={isDateInPast()}
             >
               <span
                 className={formData.endTime ? "text-black" : "text-gray-500"}
@@ -280,8 +330,8 @@ const MeetingForm = ({ formData, handleInputChange }) => {
               />
             </button>
 
-            {isEndTimeDropdownOpen && (
-              <div 
+            {isEndTimeDropdownOpen && !isDateInPast() && (
+              <div
                 className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1"
                 onMouseEnter={clearEndTimeAutoClose}
                 onMouseLeave={startEndTimeAutoClose}
@@ -318,11 +368,15 @@ const MeetingForm = ({ formData, handleInputChange }) => {
         >
           <button
             type="button"
-            className="w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between"
+            className={`w-full bg-gray-100 rounded-md py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-[#058CBF] transition duration-200 text-left flex items-center justify-between ${
+              isDateInPast() ? "cursor-not-allowed opacity-50" : ""
+            }`}
             onClick={() => {
+              if (isDateInPast()) return;
               clearEmailAutoClose();
               setIsEmailDropdownOpen(!isEmailDropdownOpen);
             }}
+            disabled={isDateInPast()}
           >
             <span
               className={
@@ -339,8 +393,8 @@ const MeetingForm = ({ formData, handleInputChange }) => {
             />
           </button>
 
-          {isEmailDropdownOpen && (
-            <div 
+          {isEmailDropdownOpen && !isDateInPast() && (
+            <div
               className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1"
               onMouseEnter={clearEmailAutoClose}
               onMouseLeave={startEmailAutoClose}
@@ -357,9 +411,6 @@ const MeetingForm = ({ formData, handleInputChange }) => {
                     }`}
                     onClick={() => handleEmailSelect(option.value)}
                   >
-                 
-
-        
                     <span>{option.label}</span>
                     {selectedEmails.includes(option.value) && (
                       <span className="text-[#058CBF] font-semibold">✓</span>
@@ -377,14 +428,58 @@ const MeetingForm = ({ formData, handleInputChange }) => {
         <textarea
           name="description"
           placeholder="Add Meeting Description"
-          className="w-full h-16 border rounded-md p-2 bg-blue-50 focus:outline-none resize-none"
+          className={`w-full h-16 border rounded-md p-2 bg-blue-50 focus:outline-none resize-none ${
+            isDateInPast() ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
           value={formData.description}
           onChange={handleInputChange}
+          disabled={isDateInPast()}
         ></textarea>
       </div>
 
       {/* Hidden field to ensure meetings are properly categorized */}
       <input type="hidden" name="category" value="Meeting" />
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          type="button"
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={`py-2 px-6 rounded-lg text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
+            isDateInPast()
+              ? "bg-gray-400 cursor-not-allowed hover:scale-100"
+              : "hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-opacity-30"
+          }`}
+          style={{
+            backgroundColor: isDateInPast() ? "#9ca3af" : getMeetingColor(),
+            boxShadow: isDateInPast()
+              ? "none"
+              : `0 4px 15px ${getMeetingColor()}30`,
+            focusRingColor: isDateInPast() ? "#9ca3af" : getMeetingColor(),
+          }}
+          onClick={onSubmit}
+          disabled={isDateInPast()}
+        >
+          <div className="flex items-center justify-center">
+            {!isDateInPast() && (
+              <div className="mr-2">
+                <Users size={18} color="white" />
+              </div>
+            )}
+            <span>
+              {isDateInPast()
+                ? "Cannot Schedule Past Meeting"
+                : "Schedule Meeting"}
+            </span>
+          </div>
+        </button>
+      </div>
     </div>
   );
 };
