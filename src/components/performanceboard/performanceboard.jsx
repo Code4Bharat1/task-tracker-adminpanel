@@ -2,17 +2,20 @@
 import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import axios from "axios";
+import Cookies from "js-cookie";
+import toast from "react-hot-toast";
 
 export default function Performanceboard() {
   const underlineRef = useRef(null);
-
   const [selectedWeek, setSelectedWeek] = useState("Week 1");
-  // Initialize selectedMonth with current date
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  // State to control the dropdown visibility
   const [isOpen, setIsOpen] = useState(false);
+  const [performanceData, setPerformanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [behaviorScores, setBehaviorScores] = useState({});
 
-  // Months array for selection
   const months = [
     "January",
     "February",
@@ -31,7 +34,27 @@ export default function Performanceboard() {
   const currentMonth = selectedMonth.getMonth();
   const currentYear = selectedMonth.getFullYear();
 
-  // Navigation handlers
+  const fetchPerformanceData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        "http://localhost:4110/api/performance/generateWeeklyPerformance",
+        {
+          withCredentials: true
+        }
+      );
+      setPerformanceData(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPerformanceData();
+  }, []);
+
   const handlePrevYear = () => {
     setSelectedMonth(new Date(currentYear - 1, currentMonth, 1));
   };
@@ -45,9 +68,63 @@ export default function Performanceboard() {
     setIsOpen(false);
   };
 
-  // Format date for display
   const formatDate = () => {
     return `${months[currentMonth].substring(0, 3)} ${currentYear}`;
+  };
+
+  const handleBehaviorScoreChange = (id, value) => {
+    const score = parseFloat(value);
+
+    if (value === "") {
+      setBehaviorScores(prev => ({ ...prev, [id]: value }));
+      return;
+    }
+
+    if (isNaN(score) || score < 0 || score > 3) {
+      toast.error("Please enter a number between 0 and 3", {
+        duration:2000
+      });
+      return;
+    }
+
+    setBehaviorScores(prev => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  const handleSubmitScore = async (employeeData) => {
+    try {
+      const score = behaviorScores[employeeData._id];
+      console.log(employeeData._id)
+      console.log(score)
+      if (score === undefined || score === "") return;
+
+      await axios.put(
+        `http://localhost:4110/api/performance/updateBehaviourScore/${employeeData._id}`,
+        {
+          behaviourScore: parseFloat(score),
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+
+
+      await fetchPerformanceData();
+
+      setBehaviorScores(prev => {
+        const newScores = { ...prev };
+        delete newScores[employeeData._id];
+        return newScores;
+      });
+
+      setError(null);
+    } catch (err) {
+      console.error("Error updating behavior score:", err);
+      setError(err.response?.data?.message || "Failed to update behavior score");
+    }
   };
 
   useEffect(() => {
@@ -60,30 +137,7 @@ export default function Performanceboard() {
     }
   }, []);
 
-  const allPerformanceData = {
-    "Week 1": [
-      { rank: 1, name: "Chinmay Gawade", points: "9.5" },
-      { rank: 2, name: "Harsh Singh", points: "8.8" },
-      { rank: 3, name: "Tamim Tolkar", points: "8.3" },
-    ],
-    "Week 2": [
-      { rank: 1, name: "Harsh Singh", points: "9.3" },
-      { rank: 2, name: "Tamim Tolkar", points: "9.1" },
-      { rank: 3, name: "Chinmay Gawade", points: "8.9" },
-    ],
-    "Week 3": [
-      { rank: 1, name: "Tamim Tolkar", points: "9.7" },
-      { rank: 2, name: "Chinmay Gawade", points: "9.0" },
-      { rank: 3, name: "Harsh Singh", points: "8.5" },
-    ],
-    "Week 4": [
-      { rank: 1, name: "Chinmay Gawade", points: "9.8" },
-      { rank: 2, name: "Tamim Tolkar", points: "9.6" },
-      { rank: 3, name: "Harsh Singh", points: "9.0" },
-    ],
-  };
-
-  const performanceData = allPerformanceData[selectedWeek];
+  if (loading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="p-6">
@@ -95,6 +149,13 @@ export default function Performanceboard() {
           className="absolute left-0 bottom-0 h-[2px] bg-yellow-500 w-full scale-x-0"
         ></span>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Filter Controls */}
       <div className="flex flex-wrap gap-6 justify-between items-center px-4 mb-6">
@@ -153,11 +214,10 @@ export default function Performanceboard() {
                     <button
                       key={month}
                       onClick={() => handleSelectMonth(index)}
-                      className={`p-1 text-xs rounded transition-colors ${
-                        index === currentMonth
-                          ? "bg-[#018ABE] text-white font-medium"
-                          : "hover:bg-blue-50 text-gray-700"
-                      }`}
+                      className={`p-1 text-xs rounded transition-colors ${index === currentMonth
+                        ? "bg-[#018ABE] text-white font-medium"
+                        : "hover:bg-blue-50 text-gray-700"
+                        }`}
                     >
                       {month.substring(0, 3)}
                     </button>
@@ -174,30 +234,49 @@ export default function Performanceboard() {
         <table className="min-w-full border-collapse table-auto text-sm">
           <thead>
             <tr className="bg-[#018ABE] text-white">
-              <th className="px-4 py-2 border border-gray-100 w-[5%] text-center">
-                Rank
-              </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
-                Name
-              </th>
-              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">
-                Points (out of 10)
-              </th>
+              <th className="px-4 py-2 border border-gray-100 w-[5%] text-center">ID</th>
+              <th className="px-4 py-2 border border-gray-100 w-[15%] text-center">Name</th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">Timesheet</th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">Attendance</th>
+              <th className="px-4 py-2 border border-gray-100 w-[15%] text-center">Behavior</th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">Total</th>
+              <th className="px-4 py-2 border border-gray-100 w-[10%] text-center">Action</th>
             </tr>
           </thead>
           <tbody className="bg-white">
-            {performanceData.map((entry) => (
-              <tr key={entry.rank}>
-                <td className="px-4 py-2 custom-border font-medium relative text-center">
-                  {entry.rank}.
+            {performanceData.map((entry, index) => (
+              <tr key={entry._id || index} className="hover:bg-blue-50 transition-colors">
+                <td className="px-4 py-2 border text-center font-medium">{index + 1}</td>
+                <td className="px-4 py-2 border text-center font-medium">{entry.name}</td>
+                <td className="px-4 py-2 border text-center font-medium">{entry.timesheetScore ?? "N/A"}</td>
+                <td className="px-4 py-2 border text-center font-medium">{entry.attendanceScore ?? "N/A"}</td>
+                <td className="px-4 py-2 border text-center font-medium">
+                  <input
+                    type="number"
+                    min="-3"
+                    max="3"
+                    step="1"
+                    placeholder={entry.behaviourScore ?? "Enter"}
+                    value={behaviorScores[entry._id] || ""}
+                    onChange={(e) => handleBehaviorScoreChange(entry._id, e.target.value)}
+                    className="w-24 px-2 py-1 border rounded text-center"
+                    title="Enter score between 1 to 3"
+                  />
                 </td>
-                <td className="px-4 py-2 custom-border font-medium relative text-center">
-                  <span className="custom-border-left"></span>
-                  {entry.name}
+                <td className={`px-4 py-2 border text-center font-bold ${entry.totalScore >= 8 ? "text-green-600" :"text-red-500"}`}>
+                  {entry.totalScore}
                 </td>
-                <td className="px-4 py-2 custom-border relative font-medium text-center">
-                  <span className="custom-border-left"></span>
-                  {entry.points}
+                <td className="px-4 py-2 border text-center">
+                  <button
+                    onClick={() => handleSubmitScore(entry)}
+                    disabled={!behaviorScores[entry._id] || behaviorScores[entry._id] === ""}
+                    className={`px-3 py-1 rounded text-sm transition-colors ${behaviorScores[entry._id] && behaviorScores[entry._id] !== ""
+                      ? "bg-[#018ABE] text-white hover:bg-[#0178a1]"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                  >
+                    Submit
+                  </button>
                 </td>
               </tr>
             ))}
