@@ -93,6 +93,7 @@ export default function CalendarPage() {
   const [isStartTimeOpen, setIsStartTimeOpen] = useState(false);
   const [isEndTimeOpen, setIsEndTimeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isParticipantOpen, setIsParticipantOpen] = useState(false);
   const [remindBefore, setRemindBefore] = useState(15);
 
   // Refs
@@ -108,6 +109,20 @@ export default function CalendarPage() {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`;
   });
+
+  // Participants list
+  const participants = [
+    "alice@example.com",
+    "bob@example.com",
+    "carol@example.com",
+    "dave@example.com",
+    "eve@example.com",
+    "frank@example.com",
+    "grace@example.com",
+    "heidi@example.com",
+    "user1@example.com",
+    "user2@example.com"
+  ];
 
   // Load persisted events from localStorage on mount
   useEffect(() => {
@@ -136,6 +151,7 @@ export default function CalendarPage() {
         setIsStartTimeOpen(false);
         setIsEndTimeOpen(false);
         setIsCategoryOpen(false);
+        setIsParticipantOpen(false);
       }
     };
 
@@ -252,20 +268,6 @@ export default function CalendarPage() {
       ]
     };
     
-    // Generate participants
-    const participants = [
-      "alice@example.com",
-      "bob@example.com",
-      "carol@example.com",
-      "dave@example.com",
-      "eve@example.com",
-      "frank@example.com",
-      "grace@example.com",
-      "heidi@example.com",
-      "user1@example.com",
-      "user2@example.com"
-    ];
-    
     // Generate some events for the month
     let events = [];
     
@@ -337,6 +339,7 @@ export default function CalendarPage() {
           type: category,
           category: category,
           time: category === "Leaves" ? "All day" : time,
+          participants: category !== "Leaves" ? [participants[Math.floor(Math.random() * participants.length)]] : [],
           calType: "Monthly" // <-- Adding calType here
         });
       }
@@ -519,7 +522,8 @@ export default function CalendarPage() {
       description: taskDescription,
       date: formatDateKey(taskDate),
       time: taskTime,
-      category: "Daily Task"
+      category: "Daily Task",
+      participants: participant ? [participant] : []
     };
 
     createCalendarEntry(taskData);
@@ -543,7 +547,8 @@ export default function CalendarPage() {
       time: startTime,
       category: selectedCategory,
       reminder: true,
-      remindBefore: parseInt(remindBefore, 10)
+      remindBefore: parseInt(remindBefore, 10),
+      participants: participant ? [participant] : []
     };
 
     createCalendarEntry(eventData);
@@ -724,7 +729,7 @@ export default function CalendarPage() {
   }, [eventDates, todayKey]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 font-sans">
+    <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
       <ToastContainer 
         position="top-center" 
         autoClose={3000} 
@@ -738,249 +743,237 @@ export default function CalendarPage() {
         theme="light"
       />
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <h1 className="text-3xl font-bold relative">
-          Company Calendar
-          <span className="absolute bottom-0 left-0 w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600"></span>
-        </h1>
+      {/* Header - Fixed height */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Company Calendar
+            <span className="block w-12 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 mt-1"></span>
+          </h1>
 
-        <div className="flex items-center gap-3">
-          <div className="relative" ref={dropdownRef}>
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowDropdown((prev) => !prev)}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium transition duration-200 ease-in-out hover:bg-gray-50 flex items-center gap-2 text-sm"
+                aria-label="Select calendar view"
+              >
+                <span>Month</span>
+                <FiChevronDown className={`transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showDropdown && (
+                <div className="absolute top-full mt-1 right-0 bg-white rounded-lg shadow-lg z-10 w-36 overflow-hidden border border-gray-100">
+                  {[
+                    { label: "Day", href: "/personalcalendar" },
+                    { label: "Month", href: "/monthcalendar" },
+                    { label: "Year", href: "/yearcalendar" },
+                  ].map((item) => (
+                    <div key={item.label} onClick={() => {
+                      setShowDropdown(false);
+                      router.push(item.href);
+                    }}>
+                      <div className={`px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm ${item.label === "Month" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"}`}>
+                        {item.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={() => setShowDropdown((prev) => !prev)}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium transition duration-200 ease-in-out hover:bg-gray-50 hover:shadow flex items-center gap-2 shadow-sm"
-              aria-label="Select calendar view"
+              onClick={() => fetchCalendarData()}
+              className="flex items-center gap-1 bg-gray-100 text-gray-700 font-medium px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm"
+              disabled={isLoading}
+              title="Refresh calendar data"
             >
-              <span>Month</span>
-              <FiChevronDown className={`transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+              <FiRefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
             </button>
 
-            {showDropdown && (
-              <div className="absolute top-full mt-1 right-0 bg-white rounded-lg shadow-lg z-10 w-40 overflow-hidden border border-gray-100 animate-fadeIn">
-                {[
-                  { label: "Day", href: "/personalcalendar" },
-                  { label: "Month", href: "/monthcalendar" },
-                  { label: "Year", href: "/yearcalendar" },
-                ].map((item) => (
-                  <div key={item.label} onClick={() => {
-                    setShowDropdown(false);
-                    router.push(item.href);
-                  }}>
-                    <div className={`px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm ${item.label === "Month" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"}`}>
-                      {item.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 ease-in-out text-sm"
+            >
+              <FiPlus className="h-4 w-4" />
+              <span>Create</span>
+            </button>
           </div>
-
-          <button
-            onClick={() => fetchCalendarData()}
-            className="flex items-center gap-2 bg-gray-100 text-gray-700 font-medium px-3.5 py-2.5 rounded-lg hover:bg-gray-200 transition shadow-sm"
-            disabled={isLoading}
-            title="Refresh calendar data"
-          >
-            <FiRefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
-          </button>
-
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 ease-in-out transform hover:-translate-y-0.5"
-          >
-            <FiPlus className="h-5 w-5" />
-            <span>Create</span>
-          </button>
         </div>
       </div>
 
-      {/* Calendar */}
-      <div className="bg-white rounded-xl shadow-md p-5 relative overflow-hidden border border-gray-100">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
-            <div className="flex flex-col items-center bg-white p-6 rounded-lg shadow-lg">
-              <FiRefreshCw className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-gray-700 font-medium">Loading calendar...</p>
+      {/* Calendar Container - Takes remaining height */}
+      <div className="flex-1 flex flex-col p-4 min-h-0">
+        <div className="bg-white rounded-xl shadow-md flex-1 flex flex-col relative overflow-hidden border border-gray-100">
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
+              <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow-lg">
+                <FiRefreshCw className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                <p className="text-gray-700 font-medium text-sm">Loading calendar...</p>
+              </div>
+            </div>
+          )}
+        
+          {/* Calendar Header */}
+          <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-100">
+            <div className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              {months[currentDate.getMonth()]} <span className="text-gray-500">{currentDate.getFullYear()}</span>
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleMonthChange(-1)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700"
+                aria-label="Previous month"
+              >
+                <FiChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => handleMonthChange(1)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700"
+                aria-label="Next month"
+              >
+                <FiChevronRight size={18} />
+              </button>
             </div>
           </div>
-        )}
-      
-        <div className="flex items-center justify-between mb-5">
-          <div className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-            {months[currentDate.getMonth()]} <span className="text-gray-500">{currentDate.getFullYear()}</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleMonthChange(-1)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700"
-              aria-label="Previous month"
-            >
-              <FiChevronLeft size={22} />
-            </button>
-            <button
-              onClick={() => handleMonthChange(1)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700"
-              aria-label="Next month"
-            >
-              <FiChevronRight size={22} />
-            </button>
-          </div>
-        </div>
 
-        <div className="mt-2 mb-3">
-          <div className="grid grid-cols-7 text-center font-medium text-base mb-2 border-b pb-2">
+          {/* Days Header */}
+          <div className="flex-shrink-0 grid grid-cols-7 text-center font-medium text-sm border-b border-gray-100">
             {days.map((day, index) => (
-              <div key={day} className={`py-2 ${index === 0 ? "text-red-500" : "text-gray-700"}`}>{day}</div>
+              <div key={day} className={`py-3 ${index === 0 ? "text-red-500" : "text-gray-700"}`}>{day}</div>
+            ))}
+          </div>
+
+          {/* Calendar Grid - Takes remaining space */}
+          <div className="flex-1 grid grid-cols-7 gap-px bg-gray-100 p-px  overflow-auto">
+            {/* Empty cells for days before the first of the month */}
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <div key={`empty-start-${i}`} className="bg-gray-50 text-xs text-gray-400 flex items-center justify-center min-h-[100px]"></div>
+            ))}
+
+            {/* Days of the month */}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const events = eventDates[dateKey] || [];
+              const weekday = (firstDay + day - 1) % 7;
+              const isSunday = weekday === 0;
+              const isToday = dateKey === todayKey;
+              const isHovered = dateKey === hoverDay;
+
+              // Base styling
+              let bgClass = "bg-white";
+              let dayClass = "text-gray-800";
+              
+              if (isSunday) {
+                dayClass = "text-red-500";
+              }
+              
+              if (isToday) {
+                bgClass = "bg-blue-50";
+              }
+              
+              if (isHovered) {
+                bgClass = "bg-gray-50";
+              }
+
+              return (
+                <div
+                  key={`day-${day}`}
+                  onClick={(e) => handleDateClick(dateKey, events, e)}
+                  onMouseEnter={() => handleDayHover(dateKey)}
+                  onMouseLeave={() => handleDayHover(null)}
+                  className={`group relative flex flex-col justify-start items-start p-2 text-xs ${bgClass} hover:shadow-md hover:bg-gray-50 transition-all cursor-pointer overflow-hidden min-h-[100px] border-r border-b border-gray-100 last:border-r-0`}
+                >
+                  <div className={`w-full flex justify-between items-center mb-1 ${isToday ? 'pb-1 border-b border-blue-200' : ''}`}>
+                    <span className={`text-sm font-medium ${dayClass}`}>
+                      {day}
+                    </span>
+                    {events.length > 0 && (
+                      <span className="text-xs font-semibold bg-gray-200 text-gray-700 rounded-full px-1.5 py-0.5">
+                        {events.length}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Event indicators - max 2 visible */}
+                  <div className="w-full space-y-1 overflow-hidden flex-grow">
+                    {events.slice(0, 2).map((event, idx) => (
+                      <div
+                        key={`event-${idx}`}
+                        className={`w-full px-1.5 py-0.5 rounded text-xs text-white font-medium truncate transition-all ${animateEvent === event.id ? 'animate-pulse bg-opacity-90' : ''} ${categoryColors[event.category] || "bg-gray-400"}`}
+                        title={event.title}
+                      >
+                        {event.time && <span className="inline-block mr-1 opacity-80 text-[10px]">⌚</span>}
+                        {event.title}
+                      </div>
+                    ))}
+
+                    {events.length > 2 && (
+                      <div className="text-xs font-medium text-blue-600 px-1.5 py-0.5 bg-blue-50 rounded">
+                        +{events.length - 2} more
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hover Tooltip */}
+                  {events.length > 0 && isHovered && (
+                    <div className="absolute z-40 -translate-y-2 -translate-x-1/2 left-1/2 bottom-full w-64 bg-white text-gray-700 text-sm shadow-xl rounded-lg p-3 transition-opacity duration-200 pointer-events-none border border-gray-200">
+                      <div className="text-base font-semibold mb-2 text-gray-800 border-b pb-2">
+                        {`${months[month]} ${day}, ${year}`}
+                      </div>
+                      <ul className="space-y-2 max-h-32 overflow-y-auto">
+                        {events.map((event, index) => (
+                          <li key={index} className="border-b pb-1 last:border-b-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`inline-block w-2 h-2 rounded-sm ${categoryColors[event.category] || ""}`}></span>
+                              <span className="font-semibold truncate text-xs">{event.title}</span>
+                            </div>
+                            {event.startTime && event.endTime ? (
+                              <div className="text-xs text-blue-600 flex items-center gap-1">
+                                <FiClock className="inline-block" />
+                                {event.startTime} - {event.endTime}
+                              </div>
+                            ) : event.time && (
+                              <div className="text-xs text-blue-600 flex items-center gap-1">
+                                <FiClock className="inline-block" />
+                                {event.time}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      
+                      {/* Triangle pointer */}
+                      <div className="absolute w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45 left-1/2 -bottom-1.5 -ml-1.5"></div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Empty cells for days after the end of the month */}
+            {Array.from({ length: endOffset }).map((_, i) => (
+              <div key={`empty-end-${i}`} className="bg-gray-50 text-xs text-gray-400 flex items-center justify-center min-h-[100px]"></div>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {/* Empty cells for days before the first of the month */}
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-start-${i}`} className="aspect-square rounded-lg bg-gray-50 text-sm text-gray-400 flex items-center justify-center"></div>
-          ))}
-
-          {/* Days of the month */}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const events = eventDates[dateKey] || [];
-            const weekday = (firstDay + day - 1) % 7;
-            const isSunday = weekday === 0;
-            const isToday = dateKey === todayKey;
-            const isHovered = dateKey === hoverDay;
-
-            // Group events by category
-            const groupedEvents = events.reduce((acc, event) => {
-              acc[event.category] = (acc[event.category] || 0) + 1;
-              return acc;
-            }, {});
-
-            // Sort by priority
-            const sortedEvents = Object.entries(groupedEvents)
-              .map(([category, count]) => ({ category, count }))
-              .sort((a, b) => {
-                const aIndex = priorityOrder.indexOf(a.category);
-                const bIndex = priorityOrder.indexOf(b.category);
-                const aPriority = aIndex === -1 ? Infinity : aIndex;
-                const bPriority = bIndex === -1 ? Infinity : bIndex;
-                return aPriority - bPriority;
-              });
-
-            // Base styling
-            let bgClass = "bg-white";
-            let dayClass = "text-gray-800";
-            
-            if (isSunday) {
-              dayClass = "text-red-500";
-            }
-            
-            if (isToday) {
-              bgClass = "bg-blue-50";
-            }
-            
-            if (isHovered) {
-              bgClass = "bg-gray-50";
-            }
-
-            return (
-              <div
-                key={`day-${day}`}
-                onClick={(e) => handleDateClick(dateKey, events, e)}
-                onMouseEnter={() => handleDayHover(dateKey)}
-                onMouseLeave={() => handleDayHover(null)}
-                className={`group relative aspect-square flex flex-col justify-start items-start p-1.5 text-sm rounded-lg border ${isToday ? 'border-blue-400' : 'border-gray-100'} ${bgClass} hover:shadow-md hover:border-blue-200 transition-all cursor-pointer overflow-hidden`}
-              >
-                <div className={`w-full flex justify-between items-center mb-1 ${isToday ? 'pb-1 border-b border-blue-200' : ''}`}>
-                  <span className={`text-base font-medium ${dayClass}`}>
-                    {day}
-                  </span>
-                  {events.length > 0 && (
-                    <span className="text-xs font-semibold bg-gray-100 text-gray-700 rounded-full px-1.5 py-0.5">
-                      {events.length}
-                    </span>
-                  )}
-                </div>
-
-                {/* Event indicators - max 3 visible */}
-                <div className="w-full mt-0.5 space-y-1 overflow-hidden flex-grow">
-                  {events.slice(0, 3).map((event, idx) => (
-                    <div
-                      key={`event-${idx}`}
-                      className={`w-full px-1.5 py-0.5 rounded text-xs text-white font-medium truncate transition-all ${animateEvent === event.id ? 'animate-pulse bg-opacity-90' : ''} ${categoryColors[event.category] || "bg-gray-400"}`}
-                      title={event.title}
-                    >
-                      {event.time && <span className="inline-block mr-1 opacity-80 text-[10px]">⌚</span>}
-                      {event.title}
-                    </div>
-                  ))}
-
-                  {events.length > 3 && (
-                    <div className="text-xs font-medium text-blue-600 px-1.5 py-0.5 bg-blue-50 rounded">
-                      +{events.length - 3} more
-                    </div>
-                  )}
-                </div>
-
-                {/* Hover Tooltip */}
-                {events.length > 0 && isHovered && (
-                  <div className="absolute z-40 -translate-y-2 -translate-x-1/2 left-1/2 bottom-full w-64 bg-white text-gray-700 text-sm shadow-xl rounded-lg p-3 transition-opacity duration-200 pointer-events-none border border-gray-200 animate-fadeIn">
-                    <div className="text-lg font-semibold mb-2 text-gray-800 border-b pb-2">
-                      {`${months[month]} ${day}, ${year}`}
-                    </div>
-                    <ul className="space-y-2 max-h-48 overflow-y-auto">
-                      {events.map((event, index) => (
-                        <li key={index} className="border-b pb-2 last:border-b-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`inline-block w-3 h-3 rounded-sm ${categoryColors[event.category] || ""}`}></span>
-                            <span className="font-semibold truncate">{event.title}</span>
-                          </div>
-                          {event.startTime && event.endTime ? (
-                            <div className="text-xs text-blue-600 flex items-center gap-1">
-                              <FiClock className="inline-block" />
-                              {event.startTime} - {event.endTime}
-                            </div>
-                          ) : event.time && (
-                            <div className="text-xs text-blue-600 flex items-center gap-1">
-                              <FiClock className="inline-block" />
-                              {event.time}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                    
-                    {/* Triangle pointer */}
-                    <div className="absolute w-4 h-4 bg-white border-b border-r border-gray-200 transform rotate-45 left-1/2 -bottom-2 -ml-2"></div>
-                  </div>
-                )}
+        {/* Categories - Compact version */}
+        <div className="bg-white p-3 rounded-xl shadow-sm mt-3 border border-gray-100">
+          <h2 className="text-sm font-bold mb-2 text-gray-800">Categories</h2>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {Object.entries(categoryColors).map(([category, colorClass]) => (
+              <div key={category} className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
+                <span className={`w-2 h-2 ${colorClass} rounded-sm`}></span>
+                <span className="font-medium text-gray-700">{category}</span>
               </div>
-            );
-          })}
-
-          {/* Empty cells for days after the end of the month */}
-          {Array.from({ length: endOffset }).map((_, i) => (
-            <div key={`empty-end-${i}`} className="aspect-square rounded-lg bg-gray-50 text-sm text-gray-400 flex items-center justify-center"></div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="bg-white p-5 rounded-xl shadow-sm mt-6 border border-gray-100">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Event Categories</h2>
-        <div className="flex flex-wrap gap-4 text-sm">
-          {Object.entries(categoryColors).map(([category, colorClass]) => (
-            <div key={category} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-              <span className={`w-4 h-4 ${colorClass} rounded-sm shadow-sm`}></span>
-              <span className="font-medium text-gray-700">{category}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Create Modal */}
+      {/* Create Modal - More compact */}
       {showModal && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300" 
@@ -991,7 +984,7 @@ export default function CalendarPage() {
         >
           <div 
             ref={modalRef}
-            className="bg-white w-full max-w-lg rounded-xl shadow-2xl p-6 relative animate-scaleIn"
+            className="bg-white w-full max-w-md rounded-xl shadow-2xl relative max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -999,27 +992,27 @@ export default function CalendarPage() {
                 setShowModal(false);
                 resetForm();
               }}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 transition z-10"
               aria-label="Close modal"
               disabled={isSubmitting}
             >
-              <FiX size={20} className="text-gray-500" />
+              <FiX size={16} className="text-gray-500" />
             </button>
 
             {/* Tabs */}
-            <div className="flex justify-around mb-6 border-b">
+            <div className="flex justify-around border-b bg-gray-50 rounded-t-xl">
               {["Task", "Event", "Meeting"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3 px-5 font-medium transition-all duration-200 relative ${
+                  className={`py-3 px-3 font-medium transition-all duration-200 relative text-sm flex-1 ${
                     activeTab === tab
-                      ? "text-blue-600"
+                      ? "text-blue-600 bg-white"
                       : "text-gray-600 hover:text-gray-800"
                   }`}
                   disabled={isSubmitting}
                 >
-                  {tab === "Meeting" ? "Schedule Meeting" : tab}
+                  {tab === "Meeting" ? "Meeting" : tab}
                   {activeTab === tab && (
                     <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>
                   )}
@@ -1027,288 +1020,216 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Tab Content */}
-            <div className="space-y-5">
-              {/* Common Fields */}
-              <div className="mb-5">
-                <input
-                  type="text"
-                  placeholder={`Add Title${activeTab === "Meeting" ? ", e.g., Project Stand-up Meeting" : ""}`}
-                  className="w-full border-b border-gray-300 focus:border-blue-500 focus:outline-none py-2 text-gray-800 placeholder:text-gray-500 text-lg font-medium transition-colors duration-200"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </div>
+            {/* Tab Content - Scrollable */}
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-100px)]">
+              <div className="space-y-4">
+                {/* Title Input */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder={`Add Title${activeTab === "Meeting" ? ", e.g., Project Stand-up Meeting" : ""}`}
+                    className="w-full border-b border-gray-300 focus:border-blue-500 focus:outline-none py-2 text-gray-800 placeholder:text-gray-500 text-base font-medium transition-colors duration-200"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-              {/* Date Picker - Common to all tabs */}
-              <div className="mb-5 flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                <FiCalendar className="text-blue-500 text-xl" />
-                <input
-                  type="date"
-                  value={taskDate.toISOString().split('T')[0]}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setTaskDate(new Date(e.target.value))}
-                  className="flex-1 bg-transparent focus:outline-none text-gray-700"
-                  disabled={isSubmitting}
-                />
-              </div>
+                {/* Date Picker */}
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                  <FiCalendar className="text-blue-500" />
+                  <input
+                    type="date"
+                    value={taskDate.toISOString().split('T')[0]}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setTaskDate(new Date(e.target.value))}
+                    className="flex-1 bg-transparent focus:outline-none text-gray-700 text-sm"
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-              {/* Task Tab Content */}
-              {activeTab === "Task" && (
-                <>
-                  <div className="mb-5 relative time-dropdown">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Time:</label>
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsTimeDropdownOpen(!isTimeDropdownOpen)}
-                        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        <span className={taskTime ? "text-gray-800" : "text-gray-500"}>
-                          {taskTime || "Select time"}
-                        </span>
-                        <FiChevronDown className={`transition-transform duration-200 ${isTimeDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
+                {/* Task Tab Content */}
+                {activeTab === "Task" && (
+                  <>
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Time:</label>
+                      <div className="relative">
+                        <button
+                          onClick={() => setIsTimeDropdownOpen(!isTimeDropdownOpen)}
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
+                          disabled={isSubmitting}
+                        >
+                          <span className={taskTime ? "text-gray-800" : "text-gray-500"}>
+                            {taskTime || "Select time"}
+                          </span>
+                          <FiChevronDown className={`transition-transform duration-200 ${isTimeDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
 
-                      {isTimeDropdownOpen && (
-                        <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border border-gray-200 animate-fadeIn">
-                          <div className="sticky top-0 bg-gray-50 p-2 border-b">
-                            <input 
-                              type="text" 
-                              placeholder="Search time..."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                              onClick={(e) => e.stopPropagation()}
-                              disabled={isSubmitting}
-                            />
+                        {isTimeDropdownOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                            {times.map((time, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setTaskTime(time);
+                                  setIsTimeDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
+                                  taskTime === time ? "bg-blue-100 text-blue-700" : ""
+                                }`}
+                                disabled={isSubmitting}
+                              >
+                                {time}
+                              </button>
+                            ))}
                           </div>
-                          {times.map((time, idx) => (
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Participant Dropdown for Task */}
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Participant (Optional):</label>
+                      <div className="relative">
+                        <button
+                          onClick={() => setIsParticipantOpen(!isParticipantOpen)}
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
+                          disabled={isSubmitting}
+                        >
+                          <span className={participant ? "text-gray-800" : "text-gray-500"}>
+                            {participant || "Select participant"}
+                          </span>
+                          <FiChevronDown className={`transition-transform duration-200 ${isParticipantOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isParticipantOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
                             <button
-                              key={idx}
                               onClick={() => {
-                                setTaskTime(time);
-                                setIsTimeDropdownOpen(false);
+                                setParticipant("");
+                                setIsParticipantOpen(false);
                               }}
-                              className={`w-full text-left px-4 py-2 hover:bg-blue-50 ${
-                                taskTime === time ? "bg-blue-100 text-blue-700" : ""
-                              }`}
+                              className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm text-gray-500"
                               disabled={isSubmitting}
                             >
-                              {time}
+                              None
                             </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-5">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Description:</label>
-                    <textarea
-                      placeholder="Add Description"
-                      className="w-full bg-gray-50 px-4 py-3 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:border-blue-500 focus:outline-none transition-colors resize-none"
-                      value={taskDescription}
-                      onChange={(e) => setTaskDescription(e.target.value)}
-                      rows={3}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
-                    <button
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      className="px-5 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleTaskCreate}
-                      className={`px-5 py-2.5 ${
-                        isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-                      } text-white rounded-lg transition font-medium flex items-center gap-2 shadow-sm`}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting && <FiRefreshCw className="animate-spin h-4 w-4" />}
-                      Create Task
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Event Tab Content */}
-              {activeTab === "Event" && (
-                <>
-                  <div className="mb-5 relative time-dropdown">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Category:</label>
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-block w-4 h-4 rounded-sm ${categoryColors[selectedCategory]}`}></span>
-                          <span className="text-gray-800">{selectedCategory}</span>
-                        </div>
-                        <FiChevronDown className={`transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {isCategoryOpen && (
-                        <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border border-gray-200 animate-fadeIn">
-                          {priorityOrder.filter(category => category !== "Meeting").map((category, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setSelectedCategory(category);
-                                setIsCategoryOpen(false);
-                              }}
-                              className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors ${
-                                selectedCategory === category ? `${categoryTextColors[category]} bg-opacity-10 bg-blue-50 font-medium` : ""
-                              }`}
-                              disabled={isSubmitting}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className={`inline-block w-4 h-4 rounded-sm ${categoryColors[category]}`}></span>
-                                {category}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-5 relative time-dropdown">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Time:</label>
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsStartTimeOpen(!isStartTimeOpen)}
-                        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        <span className={startTime ? "text-gray-800" : "text-gray-500"}>
-                          {startTime || "Select time"}
-                        </span>
-                        <FiChevronDown className={`transition-transform duration-200 ${isStartTimeOpen ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {isStartTimeOpen && (
-                        <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border border-gray-200 animate-fadeIn">
-                          <div className="sticky top-0 bg-gray-50 p-2 border-b">
-                            <input 
-                              type="text" 
-                              placeholder="Search time..."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                              onClick={(e) => e.stopPropagation()}
-                              disabled={isSubmitting}
-                            />
+                            {participants.map((p, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setParticipant(p);
+                                  setIsParticipantOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
+                                  participant === p ? "bg-blue-100 text-blue-700" : ""
+                                }`}
+                                disabled={isSubmitting}
+                              >
+                                {p}
+                              </button>
+                            ))}
                           </div>
-                          {times.map((time, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setStartTime(time);
-                                setIsStartTimeOpen(false);
-                              }}
-                              className={`w-full text-left px-4 py-2 hover:bg-blue-50 ${
-                                startTime === time ? "bg-blue-100 text-blue-700" : ""
-                              }`}
-                              disabled={isSubmitting}
-                            >
-                              {time}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mb-5">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Description:</label>
-                    <textarea
-                      placeholder="Add Description"
-                      className="w-full bg-gray-50 px-4 py-3 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:border-blue-500 focus:outline-none transition-colors resize-none"
-                      value={taskDescription}
-                      onChange={(e) => setTaskDescription(e.target.value)}
-                      rows={2}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div className="mb-5">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Remind Before:</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        value={remindBefore}
-                        onChange={(e) => setRemindBefore(e.target.value)}
-                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        min="1"
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Description:</label>
+                      <textarea
+                        placeholder="Add Description"
+                        className="w-full bg-gray-50 px-3 py-2 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:border-blue-500 focus:outline-none transition-colors resize-none text-sm"
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        rows={2}
                         disabled={isSubmitting}
                       />
-                      <span className="text-gray-700">minutes</span>
                     </div>
-                  </div>
 
-                  <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
-                    <button
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      className="px-5 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleEventCreate}
-                      className={`px-5 py-2.5 ${
-                        isSubmitting ? 'bg-gray-400' : `${categoryColors[selectedCategory]} ${categoryHoverColors[selectedCategory]}`
-                      } text-white rounded-lg transition font-medium flex items-center gap-2 shadow-sm`}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting && <FiRefreshCw className="animate-spin h-4 w-4" />}
-                      Create Event
-                    </button>
-                  </div>
-                </>
-              )}
+                    <div className="flex justify-end gap-3 pt-3 border-t">
+                      <button
+                        onClick={() => {
+                          setShowModal(false);
+                          resetForm();
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors text-sm"
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleTaskCreate}
+                        className={`px-4 py-2 ${
+                          isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
+                        Create Task
+                      </button>
+                    </div>
+                  </>
+                )}
 
-              {/* Meeting Tab Content */}
-              {activeTab === "Meeting" && (
-                <>
-                  <div className="mb-5 relative time-dropdown">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Time:</label>
-                    <div className="flex items-center gap-2">
-                      {/* Start Time */}
-                      <div className="relative flex-1">
+                {/* Event Tab Content */}
+                {activeTab === "Event" && (
+                  <>
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Category:</label>
+                      <div className="relative">
+                        <button
+                          onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
+                          disabled={isSubmitting}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block w-3 h-3 rounded-sm ${categoryColors[selectedCategory]}`}></span>
+                            <span className="text-gray-800">{selectedCategory}</span>
+                          </div>
+                          <FiChevronDown className={`transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isCategoryOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                            {priorityOrder.filter(category => category !== "Meeting").map((category, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setSelectedCategory(category);
+                                  setIsCategoryOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors text-sm ${
+                                  selectedCategory === category ? `${categoryTextColors[category]} bg-opacity-10 bg-blue-50 font-medium` : ""
+                                }`}
+                                disabled={isSubmitting}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-block w-3 h-3 rounded-sm ${categoryColors[category]}`}></span>
+                                  {category}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Time:</label>
+                      <div className="relative">
                         <button
                           onClick={() => setIsStartTimeOpen(!isStartTimeOpen)}
-                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors"
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
                           disabled={isSubmitting}
                         >
                           <span className={startTime ? "text-gray-800" : "text-gray-500"}>
-                            {startTime || "Start"}
+                            {startTime || "Select time"}
                           </span>
                           <FiChevronDown className={`transition-transform duration-200 ${isStartTimeOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isStartTimeOpen && (
-                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border border-gray-200 animate-fadeIn">
-                            <div className="sticky top-0 bg-gray-50 p-2 border-b">
-                              <input 
-                                type="text" 
-                                placeholder="Search time..."
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                onClick={(e) => e.stopPropagation()}
-                                disabled={isSubmitting}
-                              />
-                            </div>
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
                             {times.map((time, idx) => (
                               <button
                                 key={idx}
@@ -1316,7 +1237,7 @@ export default function CalendarPage() {
                                   setStartTime(time);
                                   setIsStartTimeOpen(false);
                                 }}
-                                className={`w-full text-left px-4 py-2 hover:bg-blue-50 ${
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
                                   startTime === time ? "bg-blue-100 text-blue-700" : ""
                                 }`}
                                 disabled={isSubmitting}
@@ -1327,115 +1248,246 @@ export default function CalendarPage() {
                           </div>
                         )}
                       </div>
+                    </div>
 
-                      <span className="text-gray-500 font-medium">to</span>
-
-                      {/* End Time */}
-                      <div className="relative flex-1">
+                    {/* Participant Dropdown for Event */}
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Participant (Optional):</label>
+                      <div className="relative">
                         <button
-                          onClick={() => setIsEndTimeOpen(!isEndTimeOpen)}
-                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors"
+                          onClick={() => setIsParticipantOpen(!isParticipantOpen)}
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
                           disabled={isSubmitting}
                         >
-                          <span className={endTime ? "text-gray-800" : "text-gray-500"}>
-                            {endTime || "End"}
+                          <span className={participant ? "text-gray-800" : "text-gray-500"}>
+                            {participant || "Select participant"}
                           </span>
-                          <FiChevronDown className={`transition-transform duration-200 ${isEndTimeOpen ? 'rotate-180' : ''}`} />
+                          <FiChevronDown className={`transition-transform duration-200 ${isParticipantOpen ? 'rotate-180' : ''}`} />
                         </button>
 
-                        {isEndTimeOpen && (
-                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border border-gray-200 animate-fadeIn">
-                            <div className="sticky top-0 bg-gray-50 p-2 border-b">
-                              <input 
-                                type="text" 
-                                placeholder="Search time..."
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                onClick={(e) => e.stopPropagation()}
-                                disabled={isSubmitting}
-                              />
-                            </div>
-                            {times.map((time, idx) => (
+                        {isParticipantOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                            <button
+                              onClick={() => {
+                                setParticipant("");
+                                setIsParticipantOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm text-gray-500"
+                              disabled={isSubmitting}
+                            >
+                              None
+                            </button>
+                            {participants.map((p, idx) => (
                               <button
                                 key={idx}
                                 onClick={() => {
-                                  setEndTime(time);
-                                  setIsEndTimeOpen(false);
+                                  setParticipant(p);
+                                  setIsParticipantOpen(false);
                                 }}
-                                className={`w-full text-left px-4 py-2 hover:bg-blue-50 ${
-                                  endTime === time ? "bg-blue-100 text-blue-700" : ""
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
+                                  participant === p ? "bg-blue-100 text-blue-700" : ""
                                 }`}
                                 disabled={isSubmitting}
                               >
-                                {time}
+                                {p}
                               </button>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mb-5">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Add Participant:</label>
-                    <div className="relative">
-                      <select
-                        value={participant}
-                        onChange={(e) => setParticipant(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-700 bg-gray-50 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Description:</label>
+                      <textarea
+                        placeholder="Add Description"
+                        className="w-full bg-gray-50 px-3 py-2 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:border-blue-500 focus:outline-none transition-colors resize-none text-sm"
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        rows={2}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Remind Before:</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={remindBefore}
+                          onChange={(e) => setRemindBefore(e.target.value)}
+                          className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                          min="1"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-gray-700 text-sm">minutes</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t">
+                      <button
+                        onClick={() => {
+                          setShowModal(false);
+                          resetForm();
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors text-sm"
                         disabled={isSubmitting}
                       >
-                        <option value="" disabled>Select Email Address</option>
-                        <option value="alice@example.com">alice@example.com</option>
-                        <option value="bob@example.com">bob@example.com</option>
-                        <option value="user1@example.com">user1@example.com</option>
-                        <option value="user2@example.com">user2@example.com</option>
-                      </select>
-                      <FiChevronDown className="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-600 pointer-events-none" />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleEventCreate}
+                        className={`px-4 py-2 ${
+                          isSubmitting ? 'bg-gray-400' : `${categoryColors[selectedCategory]} ${categoryHoverColors[selectedCategory]}`
+                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
+                        Create Event
+                      </button>
                     </div>
-                  </div>
+                  </>
+                )}
 
-                  <div className="mb-5">
-                    <label className="text-sm text-gray-600 font-medium block mb-2">Description:</label>
-                    <textarea
-                      placeholder="Meeting Description"
-                      className="w-full bg-gray-50 px-4 py-3 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                      value={taskDescription}
-                      onChange={(e) => setTaskDescription(e.target.value)}
-                      rows={2}
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                {/* Meeting Tab Content */}
+                {activeTab === "Meeting" && (
+                  <>
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Time:</label>
+                      <div className="flex items-center gap-2">
+                        {/* Start Time */}
+                        <div className="relative flex-1">
+                          <button
+                            onClick={() => setIsStartTimeOpen(!isStartTimeOpen)}
+                            className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
+                            disabled={isSubmitting}
+                          >
+                            <span className={startTime ? "text-gray-800" : "text-gray-500"}>
+                              {startTime || "Start"}
+                            </span>
+                            <FiChevronDown className={`transition-transform duration-200 ${isStartTimeOpen ? 'rotate-180' : ''}`} />
+                          </button>
 
-                  <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
-                    <button
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      className="px-5 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleMeetingCreate}
-                      className={`px-5 py-2.5 ${
-                        isSubmitting ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'
-                      } text-white rounded-lg transition font-medium flex items-center gap-2 shadow-sm`}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting && <FiRefreshCw className="animate-spin h-4 w-4" />}
-                      Schedule Meeting
-                    </button>
-                  </div>
-                </>
-              )}
+                          {isStartTimeOpen && (
+                            <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                              {times.map((time, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    setStartTime(time);
+                                    setIsStartTimeOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
+                                    startTime === time ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
+                                  disabled={isSubmitting}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <span className="text-gray-500 font-medium text-sm">to</span>
+
+                        {/* End Time */}
+                        <div className="relative flex-1">
+                          <button
+                            onClick={() => setIsEndTimeOpen(!isEndTimeOpen)}
+                            className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
+                            disabled={isSubmitting}
+                          >
+                            <span className={endTime ? "text-gray-800" : "text-gray-500"}>
+                              {endTime || "End"}
+                            </span>
+                            <FiChevronDown className={`transition-transform duration-200 ${isEndTimeOpen ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isEndTimeOpen && (
+                            <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                              {times.map((time, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    setEndTime(time);
+                                    setIsEndTimeOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
+                                    endTime === time ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
+                                  disabled={isSubmitting}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Add Participant:</label>
+                      <div className="relative">
+                        <select
+                          value={participant}
+                          onChange={(e) => setParticipant(e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-gray-50 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer text-sm"
+                          disabled={isSubmitting}
+                        >
+                          <option value="" disabled>Select Email Address</option>
+                          {participants.map((p, idx) => (
+                            <option key={idx} value={p}>{p}</option>
+                          ))}
+                        </select>
+                        <FiChevronDown className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Description:</label>
+                      <textarea
+                        placeholder="Meeting Description"
+                        className="w-full bg-gray-50 px-3 py-2 rounded-lg text-gray-700 placeholder:text-gray-500 border border-gray-200 focus:outline-none focus:border-blue-500 transition-colors resize-none text-sm"
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        rows={2}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t">
+                      <button
+                        onClick={() => {
+                          setShowModal(false);
+                          resetForm();
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors text-sm"
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleMeetingCreate}
+                        className={`px-4 py-2 ${
+                          isSubmitting ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'
+                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
+                        Schedule Meeting
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Day Detail Modal */}
+      {/* Day Detail Modal - More compact */}
       {showDayModal && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300"
@@ -1443,40 +1495,36 @@ export default function CalendarPage() {
         >
           <div
             ref={dayModalRef}
-            className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-hidden animate-scaleIn"
+            className="bg-white w-full max-w-lg rounded-xl shadow-2xl relative max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              transform: `translate(${Math.min(Math.max(0, modalPosition.left - 400), window.innerWidth - 500)}px, ${Math.min(Math.max(0, modalPosition.top - 200), window.innerHeight - 400)}px)`,
-              transition: 'all 0.2s ease-out'
-            }}
           >
-            <div className="sticky top-0 bg-white p-6 pb-3 border-b z-10 flex justify-between items-center">
+            <div className="sticky top-0 bg-white p-4 border-b z-10 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                <h2 className="text-lg font-bold text-gray-800 mb-1">
                   {formatDateForDisplay(selectedDate)}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm">
                   {selectedDateEvents.length} {selectedDateEvents.length === 1 ? 'event' : 'events'} scheduled
                 </p>
               </div>
 
               <button
                 onClick={() => setShowDayModal(false)}
-                className="p-2 rounded-full hover:bg-gray-100 transition"
+                className="p-1.5 rounded-full hover:bg-gray-100 transition"
                 aria-label="Close modal"
               >
-                <FiX size={24} className="text-gray-500" />
+                <FiX size={20} className="text-gray-500" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+            <div className="p-4 overflow-y-auto max-h-[calc(80vh-140px)]">
               {selectedDateEvents.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FiCalendar className="h-10 w-10 text-gray-400" />
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <FiCalendar className="h-8 w-8 text-gray-400" />
                   </div>
-                  <div className="text-gray-500 text-lg mb-2 font-medium">No events scheduled</div>
-                  <p className="text-gray-500 mb-6">This day is free from any scheduled events.</p>
+                  <div className="text-gray-500 text-base mb-1 font-medium">No events scheduled</div>
+                  <p className="text-gray-500 text-sm mb-4">This day is free from any scheduled events.</p>
                   <button
                     onClick={() => {
                       setShowDayModal(false);
@@ -1485,7 +1533,7 @@ export default function CalendarPage() {
                       setTaskDate(date);
                       setShowModal(true);
                     }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                   >
                     <span className="flex items-center gap-2">
                       <FiPlus />
@@ -1494,29 +1542,29 @@ export default function CalendarPage() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {selectedDateEvents.map((event, index) => (
                     <div
                       key={`event-detail-${index}`}
-                      className={`border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer ${animateEvent === event.id ? 'animate-pulse border-blue-300' : ''}`}
+                      className={`border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition cursor-pointer ${animateEvent === event.id ? 'animate-pulse border-blue-300' : ''}`}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className={`inline-block w-5 h-5 rounded-md mt-1 flex-shrink-0 ${categoryColors[event.category] || "bg-gray-400"}`}></span>
+                      <div className="flex items-start gap-2">
+                        <span className={`inline-block w-4 h-4 rounded-md mt-0.5 flex-shrink-0 ${categoryColors[event.category] || "bg-gray-400"}`}></span>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg text-gray-800 mb-1">
+                          <h3 className="font-semibold text-base text-gray-800 mb-1">
                             {event.title}
                           </h3>
 
                           {event.description && (
-                            <p className="text-gray-600 mb-3 line-clamp-2">
+                            <p className="text-gray-600 mb-2 text-sm line-clamp-2">
                               {event.description}
                             </p>
                           )}
 
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
                               <span className="font-medium">Category:</span>
-                              <span className={`px-2.5 py-1 rounded-full text-white text-xs ${categoryColors[event.category] || "bg-gray-400"}`}>
+                              <span className={`px-2 py-0.5 rounded-full text-white text-xs ${categoryColors[event.category] || "bg-gray-400"}`}>
                                 {event.category}
                               </span>
                             </div>
@@ -1530,16 +1578,16 @@ export default function CalendarPage() {
                                   </div>
                                 )}
                                 {event.participants?.length > 0 && (
-                                  <div className="w-full mt-3">
-                                    <span className="flex items-center gap-1 font-medium text-gray-700 mb-2">
+                                  <div className="w-full mt-2">
+                                    <span className="flex items-center gap-1 font-medium text-gray-700 mb-1 text-xs">
                                       <FiUsers className="text-gray-500" />
                                       Participants:
                                     </span>
-                                    <div className="flex flex-wrap gap-2 mt-1">
+                                    <div className="flex flex-wrap gap-1 mt-1">
                                       {event.participants.map((participant, pIdx) => (
                                         <span
                                           key={`participant-${pIdx}`}
-                                          className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium"
+                                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
                                         >
                                           {participant}
                                         </span>
@@ -1549,12 +1597,32 @@ export default function CalendarPage() {
                                 )}
                               </>
                             ) : (
-                              event.time && (
-                                <div className="flex items-center gap-1">
-                                  <FiClock className="text-gray-400" />
-                                  <span>{event.time}</span>
-                                </div>
-                              )
+                              <>
+                                {event.time && (
+                                  <div className="flex items-center gap-1">
+                                    <FiClock className="text-gray-400" />
+                                    <span>{event.time}</span>
+                                  </div>
+                                )}
+                                {event.participants?.length > 0 && (
+                                  <div className="w-full mt-2">
+                                    <span className="flex items-center gap-1 font-medium text-gray-700 mb-1 text-xs">
+                                      <FiUsers className="text-gray-500" />
+                                      Participants:
+                                    </span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {event.participants.map((participant, pIdx) => (
+                                        <span
+                                          key={`participant-${pIdx}`}
+                                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                                        >
+                                          {participant}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -1565,10 +1633,10 @@ export default function CalendarPage() {
               )}
             </div>
 
-            <div className="sticky bottom-0 bg-white mt-3 py-4 px-6 border-t flex justify-end gap-3 shadow-md">
+            <div className="sticky bottom-0 bg-white py-3 px-4 border-t flex justify-end gap-2">
               <button
                 onClick={() => setShowDayModal(false)}
-                className="px-5 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors text-sm"
               >
                 Close
               </button>
@@ -1580,7 +1648,7 @@ export default function CalendarPage() {
                   setTaskDate(date);
                   setShowModal(true);
                 }}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm"
               >
                 <FiPlus />
                 Add Event
@@ -1590,7 +1658,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Add some CSS animations for dynamic effects */}
+      {/* CSS animations */}
       <style jsx global>{`
         @keyframes scaleIn {
           from { transform: scale(0.95); opacity: 0; }
@@ -1608,6 +1676,13 @@ export default function CalendarPage() {
         
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>
