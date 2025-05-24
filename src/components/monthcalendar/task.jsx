@@ -1,11 +1,13 @@
-"use client";
-import { useState, useEffect, useRef, forwardRef } from "react";
-import { LuCalendarClock } from "react-icons/lu";
-import { IoMdArrowDropdown } from "react-icons/io";
-import { MdEmail } from "react-icons/md";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { toast } from "react-toastify";
+'use client';
+import { useState, forwardRef, useCallback, useRef, useEffect } from 'react';
+import { LuCalendarClock, LuClock } from 'react-icons/lu';
+import { IoIosArrowDown } from 'react-icons/io';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { IoPersonSharp } from "react-icons/io5";
+
 
 const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
   <button
@@ -15,188 +17,180 @@ const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
     }}
     ref={ref}
     type="button"
-    className="flex-1 text-left bg-white focus:outline-none placeholder:text-gray-500 text-gray-800 cursor-pointer "
+    className="flex items-center justify-between w-full px-4 py-2 text-gray-600 bg-white border rounded-lg border-gray-300 hover:border-blue-500 focus:border-blue-500 transition-colors"
   >
-    {value || "DD/MM/YYYY"}
+    <span>{value || 'Select date'}</span>
+    <LuCalendarClock className="text-gray-400 ml-2" />
   </button>
 ));
-CustomDateInput.displayName = "CustomDateInput";
+CustomDateInput.displayName = 'CustomDateInput';
 
-export default function TaskForm({ onClose, onSave, selectedDate }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(selectedDate || new Date());
-  const [selectedTime, setSelectedTime] = useState("");
-  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
-  const [selectedEmail, setSelectedEmail] = useState("");
-  const [showEmailDropdown, setShowEmailDropdown] = useState(false);
-  const [customEmail, setCustomEmail] = useState("");
-  const [isCustomEmail, setIsCustomEmail] = useState(false);
-
-  const timeDropdownRef = useRef(null);
-  const emailDropdownRef = useRef(null);
-
-  const emailList = [
-    "john.doe@example.com",
-    "jane.smith@example.com",
-    "mark.wilson@example.com",
-    "sarah.johnson@example.com",
-    "Add custom email...",
-  ];
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (timeDropdownRef.current && !timeDropdownRef.current.contains(event.target)) {
-        setShowTimeDropdown(false);
-      }
-      if (emailDropdownRef.current && !emailDropdownRef.current.contains(event.target)) {
-        setShowEmailDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const formatDisplayTime = () => {
-    if (!selectedTime) return "Select time";
-    return selectedTime;
-  };
-
-  const handleEmailSelect = (email) => {
-    if (email === "Add custom email...") {
-      setIsCustomEmail(true);
-      setSelectedEmail("");
-    } else {
-      setSelectedEmail(email);
-      setIsCustomEmail(false);
-    }
-    setShowEmailDropdown(false);
-  };
-
-  const handleCancel = (e) => {
-    e?.preventDefault();
-    onClose();
-  };
-
-  const handleCreate = (e) => {
-    e?.preventDefault();
-
-    if (!title.trim()) {
-      toast.error("Please enter a title");
-      return;
-    }
-
-    const formattedDate = date.toISOString().split("T")[0];
-    const finalEmail = isCustomEmail ? customEmail : selectedEmail;
-
-    const taskData = {
-      type: "Task",
-      title,
-      description,
-      date: formattedDate,
-      time: selectedTime || "",
-      email: finalEmail || "",
-      createdAt: new Date().toISOString(),
-      participants: finalEmail ? [finalEmail] : []
-    };
-
-    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    tasks.push(taskData);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-
-    toast.success("Task created successfully!");
-
-    if (onSave) {
-      onSave(formattedDate, "Daily Task", title, finalEmail);
-    }
-
-    if (onClose) onClose();
+const TimeDropdown = ({ times, selectedTime, setSelectedTime, setShowTimeDropdown }) => {
+  const formatTime = (time) => {
+    const [hour, minute] = time.split(':');
+    const date = new Date();
+    date.setHours(hour);
+    date.setMinutes(minute);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
   return (
-    <div>
-      {/* Title Input */}
+    <div className="absolute z-10 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
+      {times.map((time) => (
+        <button
+          key={time}
+          onClick={() => {
+            setSelectedTime(time);
+            setShowTimeDropdown(false);
+          }}
+          className={`w-full px-4 py-2 text-left text-sm ${selectedTime === time
+            ? 'bg-blue-50 text-blue-600'
+            : 'text-gray-600 hover:bg-gray-50'
+            } transition-colors`}
+        >
+          {formatTime(time)}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+export default function TaskForm() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTime, setSelectedTime] = useState('09:00');
+  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState('');
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const timeButtonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const [participant, setParticipant] = useState("");
+  const [isParticipantOpen, setIsParticipantOpen] = useState(false);
+
+  const times = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute of ['00', '15', '30', '45']) {
+      times.push(`${hour.toString().padStart(2, '0')}:${minute}`);
+    }
+  }
+
+  const formatDisplayTime = () => {
+    if (!selectedTime) return 'Select time';
+    const [hours, minutes] = selectedTime.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const handleCancel = useCallback((e) => {
+    e?.preventDefault();
+    setTitle('');
+    setDescription('');
+    setSelectedDate(new Date());
+    setSelectedTime('09:00');
+  }, []);
+
+  const handleCreate = useCallback(async (e) => {
+    e?.preventDefault();
+
+    if (!title.trim() || !description.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const taskData = {
+        type: "Task",
+        title,
+        description,
+        date: formattedDate,
+        time: formatDisplayTime(),
+        calType: "Monthly"
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) throw new Error('Failed to create task');
+
+      toast.success('Task created successfully!');
+      handleCancel();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Failed to create task');
+    }
+  }, [title, description, selectedDate, selectedTime, handleCancel]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowTimeDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="w-full">
+      <ToastContainer position="top-center" autoClose={3000} />
+
       <input
         type="text"
         placeholder="Add Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full border-b border-gray-300 focus:outline-none py-2 text-gray-700 placeholder-gray-500 mb-4"
+        className="text-xl font-semibold text-gray-700 mb-4 bg-transparent focus:outline-none w-full placeholder-gray-400 border-b-2 border-gray-200 focus:border-blue-500 pb-2 transition-colors"
       />
 
-      {/* Date Picker */}
-      <div className="flex items-center gap-3 mb-5">
-        <LuCalendarClock className="text-2xl text-gray-600" />
-        <DatePicker
-          selected={date}
-          onChange={setDate}
-          dateFormat="dd/MM/yyyy"
-          customInput={<CustomDateInput />}
-          minDate={new Date()}
-        />
-      </div>
-
-      {/* Time Input */}
-      <div className="mb-4">
-        <label className="text-gray-600 block mb-2">Time:</label>
-        <div className="relative" ref={timeDropdownRef}>
-          <button
-            onClick={() => setShowTimeDropdown(!showTimeDropdown)}
-            className="bg-gray-100 px-4 py-2 rounded-md text-sm text-gray-700 w-full text-left flex justify-between items-center"
-          >
-            {formatDisplayTime()}
-            <IoMdArrowDropdown className="text-gray-600 text-base" />
-          </button>
-
-          {showTimeDropdown && (
-            <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-40 overflow-y-auto p-1">
-              {Array.from({ length: 24 }, (_, hour) =>
-                [0, 15, 30, 45].map((minute) => {
-                  const hourDisplay = hour % 12 === 0 ? 12 : hour % 12;
-                  const ampm = hour < 12 ? "AM" : "PM";
-                  const timeString = `${hourDisplay}:${minute.toString().padStart(2, "0")} ${ampm}`;
-                  return (
-                    <button
-                      key={`${hour}-${minute}`}
-                      onClick={() => {
-                        setSelectedTime(timeString);
-                        setShowTimeDropdown(false);
-                      }}
-                      className="w-full text-left px-2 py-1 hover:bg-blue-100 rounded-md"
-                    >
-                      {timeString}
-                    </button>
-                  );
-                })
-              ).flat()}
-            </div>
-          )}
+      <div className="space-y-6">
+        <div className="mb-4">
+          <label htmlFor="date" className="block mb-2 text-sm font-medium text-gray-700">
+            Select Date:
+          </label>
+          <input
+            type="date"
+            id="date"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={selectedDate.toISOString().split('T')[0]}
+            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            min={new Date().toISOString().split('T')[0]}
+          />
         </div>
-      </div>
 
-      {/* Email Input */}
-      <div className="mb-4">
-        <label className="text-gray-600 block mb-2">Email:</label>
-        <div className="relative" ref={emailDropdownRef}>
-          <div
-            onClick={() => setShowEmailDropdown(!showEmailDropdown)}
-            className="bg-gray-100 px-4 py-2 rounded-md text-sm text-gray-700 w-full text-left flex justify-between items-center cursor-pointer"
+
+{/* Participants Dropdown */}
+        <div className="mb-4 relative">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Participant</label>
+          <button
+            onClick={() => setIsParticipantOpen(!isParticipantOpen)}
+            className="w-full p-2 pl-10 flex items-center justify-between bg-white border border-gray-300 rounded-lg hover:border-blue-500 focus:border-blue-500 transition-colors relative"
           >
-            <div className="flex items-center gap-2">
-              <MdEmail className="text-gray-600" />
-              {isCustomEmail ? "Custom email" : selectedEmail || "Select email"}
-            </div>
-            <IoMdArrowDropdown className="text-gray-600 text-base" />
-          </div>
-
-          {showEmailDropdown && (
-            <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-40 overflow-y-auto p-1">
-              {emailList.map((email) => (
+            <IoPersonSharp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <span className="flex-1 text-left ml-2">
+              {participant || 'Select Participant'}
+            </span>
+            <IoIosArrowDown className="text-gray-500 ml-2" />
+          </button>
+          {isParticipantOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              {['alice@example.com', 'bob@example.com', 'user1@example.com', 'user2@example.com'].map((email) => (
                 <button
                   key={email}
-                  onClick={() => handleEmailSelect(email)}
-                  className="w-full text-left px-2 py-1 hover:bg-blue-100 rounded-md"
+                  onClick={() => {
+                    setParticipant(email);
+                    setIsParticipantOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm ${
+                    participant === email 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'hover:bg-gray-50'
+                  }`}
                 >
                   {email}
                 </button>
@@ -205,40 +199,59 @@ export default function TaskForm({ onClose, onSave, selectedDate }) {
           )}
         </div>
 
-        {isCustomEmail && (
-          <input
-            type="email"
-            placeholder="Enter email address"
-            value={customEmail}
-            onChange={(e) => setCustomEmail(e.target.value)}
-            className="w-full border border-gray-300 px-4 py-2 rounded-md text-sm text-gray-700 mt-2"
-          />
-        )}
-      </div>
+        <div>
+          <label htmlFor="time" className="block mb-2 text-sm font-medium text-gray-700">Select Time:</label>
+          <div className="flex items-center gap-3 relative">
+          <LuClock className="text-xl text-gray-500" />
+          <div className="relative w-full" ref={dropdownRef}>
+            <button
+              ref={timeButtonRef}
+              onClick={() => setShowTimeDropdown(!showTimeDropdown)}
+              className="flex items-center justify-between w-full px-4 py-2 text-gray-600 bg-white 
+                      border rounded-lg border-gray-300 hover:border-blue-500 focus:border-blue-500 
+                      transition-colors"
+            >
+              <span>{formatDisplayTime() || 'Select time'}</span>
+              <IoIosArrowDown className="text-gray-400 ml-2" />
+            </button>
+            {showTimeDropdown && (
+              <TimeDropdown
+                times={times}
+                selectedTime={selectedTime}
+                setSelectedTime={setSelectedTime}
+                setShowTimeDropdown={setShowTimeDropdown}
+              />
+            )}
+          </div>
+        </div>
+        </div>
 
-      {/* Description */}
-      <div className="mb-6">
-        <label className="text-gray-600 block mb-2">Description:</label>
         <textarea
           placeholder="Add Description"
-          className="w-full bg-gray-50 px-4 py-2 rounded-lg shadow-sm text-gray-700 border border-gray-300"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 
+                   focus:ring-2 focus:ring-blue-200 placeholder-gray-400 text-gray-700 
+                   transition-all resize-none"
           rows={3}
         />
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-6">
-        <button onClick={handleCancel} className="text-gray-700 hover:underline font-medium">
-          Cancel
-        </button>
-        <button
-          onClick={handleCreate}
-          className="bg-[#018ABE] text-white px-4 py-2 rounded-md hover:bg-[#016d98] transition-colors"
-        >
-          Create Task
-        </button>
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={handleCancel}
+            className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 
+                     transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreate}
+            className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 
+                     transition-colors font-medium shadow-md"
+          >
+            Create Task
+          </button>
+        </div>
       </div>
     </div>
   );

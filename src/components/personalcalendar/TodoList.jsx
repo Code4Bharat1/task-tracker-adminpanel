@@ -151,7 +151,7 @@ export default function ToDoList({ selectedDate }) {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg  w-full mt-6 max-w-7xl mx-auto">
+    <div className="p-4 bg-white rounded-lg  w-full  max-w-7xl mx-auto">
       {/* Header with selected date */}
 
       {/* Input Section */}

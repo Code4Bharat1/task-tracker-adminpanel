@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -41,6 +41,8 @@ export default function PersonalCalendar() {
   const [events, setEvents] = useState([]);
   const [clickedDay, setClickedDay] = useState(null);
   const [todayKey, setTodayKey] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [calType, setCalType] = useState("Personal"); // Add calendar type state
   const [formData, setFormData] = useState({
     title: "",
     date: formatDate(new Date()),
@@ -50,6 +52,7 @@ export default function PersonalCalendar() {
     description: "",
     email: "",
     reminderTime: "15",
+    calType: "Personal",
   });
   const [selectedOption, setSelectedOption] = useState("");
   const router = useRouter();
@@ -74,43 +77,48 @@ export default function PersonalCalendar() {
   };
   const underlineRef = useRef(null);
 
-  // Configurations - Using "Meeting" as the display name
-  const categoryConfig = {
-    Reminder: {
-      color: "#10B981",
-      bg: "#ECFDF5",
-      border: "#A7F3D0",
-      icon: Bell,
-    },
-    Deadline: {
-      color: "#8B5CF6",
-      bg: "#F3E8FF",
-      border: "#C4B5FD",
-      icon: AlertTriangle,
-    },
-    Leaves: { color: "#EF4444", bg: "#FEF2F2", border: "#FECACA", icon: Plane },
-    Meeting: {
-      color: "#FF0B0B",
-      bg: "#FEF2F2",
-      border: "#FECACA",
-      icon: Users,
-    },
-    "Daily Task": {
-      color: "#3B82F6",
-      bg: "#EFF6FF",
-      border: "#BFDBFE",
-      icon: CheckSquare,
-    },
-  };
+ // Configurations - Using "Meeting" as the display name
+const categoryConfig = {
+  Reminder: {
+    color: "#059669",       // Deeper green
+    bg: "#D1FAE5",         // Softer green
+    border: "#6EE7B7",     // Medium green
+    icon: Bell,
+  },
+  Deadline: {
+    color: "#7C3AED",      // Royal purple
+    bg: "#EDE9FE",         // Light purple
+    border: "#A78BFA",     // Medium purple
+    icon: AlertTriangle,
+  },
+  Leaves: { 
+    color: "#D97706",      // Amber
+    bg: "#FEF3C7",         // Light amber
+    border: "#FCD34D",     // Medium amber
+    icon: Plane 
+  },
+  Meeting: {
+    color: "#DC2626",      // Rich red
+    bg: "#FEE2E2",         // Light red
+    border: "#FCA5A5",     // Medium red
+    icon: Users,
+  },
+  "Daily Task": {
+    color: "#2563EB",      // Deep blue
+    bg: "#DBEAFE",         // Light blue
+    border: "#93C5FD",     // Medium blue
+    icon: CheckSquare,
+  },
+};
 
-  // Using "Meeting" as the display name
-  const categoryDotColors = {
-    "Daily Task": "bg-[#018ABE]",
-    Deadline: "bg-[#9306FF]",
-    Meeting: "bg-[#FF0B0B]",
-    Leaves: "bg-[#FFB006]",
-    Reminder: "bg-[#07D107]",
-  };
+// Using "Meeting" as the display name
+const categoryDotColors = {
+  "Daily Task": "bg-[#2563EB]",    // Matching blue
+  Deadline: "bg-[#7C3AED]",        // Matching purple
+  Meeting: "bg-[#DC2626]",         // Matching red
+  Leaves: "bg-[#D97706]",          // Matching amber
+  Reminder: "bg-[#059669]",        // Matching green
+};
 
   const priorityOrder = [
     "Daily Task",
@@ -119,6 +127,96 @@ export default function PersonalCalendar() {
     "Deadline",
     "Leaves",
   ];
+
+  // API Functions
+  const fetchCalendarData = async (showLoader = true) => {
+    if (showLoader) {
+      setIsLoading(true);
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/${calType}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      console.log(response);
+
+      if (response.status === 200) {
+        processCalendarData(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching calendar data:", err);
+      showToast("Failed to fetch calendar data");
+      
+      // Fallback to localStorage if API fails
+      const storedEvents = localStorage.getItem("calendarEvents");
+      if (storedEvents) {
+        setEvents(JSON.parse(storedEvents));
+      }
+    } finally {
+      if (showLoader) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const processCalendarData = (data) => {
+    // Process the API response data and format it for the calendar
+    // Adjust this function based on your API response structure
+    if (data && Array.isArray(data)) {
+      const formattedEvents = data.map(event => ({
+        id: event.id || Date.now(),
+        title: event.title || "",
+        date: formatDate(new Date(event.date)) || formatDate(new Date()),
+        category: event.category || "Reminder",
+        time: event.time || "",
+        endTime: event.endTime || "",
+        description: event.description || "",
+        email: event.email || "",
+        reminderTime: event.reminderTime || "15",
+        type: event.type || "Event",
+        calType: event.calType || "Personal",
+      }));
+      
+      setEvents(formattedEvents);
+      
+      // Also save to localStorage as backup
+      localStorage.setItem("calendarEvents", JSON.stringify(formattedEvents));
+    } else {
+      setEvents([]);
+    }
+  };
+
+  const createEventAPI = async (eventData) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/${calType}`,
+        eventData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        // Refresh calendar data after successful creation
+        await fetchCalendarData(false);
+        return { success: true, data: response.data };
+      }
+    } catch (err) {
+      console.error("Error creating event:", err);
+      return { success: false, error: err.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Animations
   useGSAP(() => {
@@ -140,13 +238,16 @@ export default function PersonalCalendar() {
     setTodayKey(key);
   }, []);
 
+  // Fetch calendar data on component mount and when calType changes
   useEffect(() => {
-    const storedEvents = localStorage.getItem("calendarEvents");
-    if (storedEvents) setEvents(JSON.parse(storedEvents));
-  }, []);
+    fetchCalendarData();
+  }, [calType]);
 
   useEffect(() => {
-    localStorage.setItem("calendarEvents", JSON.stringify(events));
+    // Only save to localStorage when events are updated locally
+    if (events.length > 0) {
+      localStorage.setItem("calendarEvents", JSON.stringify(events));
+    }
   }, [events]);
 
   // Helper functions
@@ -174,7 +275,7 @@ export default function PersonalCalendar() {
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     // Validation
     if (
       (activeTab === "Event" || activeTab === "Daily Task") &&
@@ -201,7 +302,11 @@ export default function PersonalCalendar() {
       eventCategory = formData.category;
     } else if (activeTab === "Schedule Meeting") {
       eventCategory = "Meeting"; // Convert to "Meeting" for display
-    } else {
+    } 
+    else if( activeTab === "Task") {
+      eventCategory = "Task"; // Convert to "Daily Task" for display
+    }
+      else {
       eventCategory = activeTab;
     }
 
@@ -212,8 +317,18 @@ export default function PersonalCalendar() {
       type: activeTab,
       category: eventCategory,
     };
-    setEvents([...events, newEvent]);
-    showToast(`${activeTab} created successfully!`);
+
+    // Try to create event via API first
+    const result = await createEventAPI(newEvent);
+    
+    if (result.success) {
+      showToast(`${activeTab} created successfully!`);
+    } else {
+      // Fallback to local storage if API fails
+      setEvents([...events, newEvent]);
+      showToast(`${activeTab} created locally (API unavailable)`);
+    }
+
     setModalOpen(false);
     setFormData({
       title: "",
@@ -356,6 +471,15 @@ export default function PersonalCalendar() {
 
   return (
     <div className="min-h-screen bg-white p-4">
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 shadow-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#018ABE] mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold relative inline-block text-gray-800">
@@ -484,8 +608,9 @@ export default function PersonalCalendar() {
               <button
                 onClick={() => setModalOpen(true)}
                 className="w-full bg-[#018ABE] py-2 px-4 rounded-md hover:bg-teal-600 text-white"
+                disabled={isLoading}
               >
-                CREATE
+                {isLoading ? "Loading..." : "CREATE"}
               </button>
             </div>
           </div>
