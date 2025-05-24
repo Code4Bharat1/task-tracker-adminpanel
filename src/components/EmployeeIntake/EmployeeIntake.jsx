@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
-const positions = ['Manager', 'Team Leader', 'Employee', 'HR'];
+const positions = ['Manager', 'TeamLeader', 'Employee', 'HR'];
 const genders = ['Male', 'Female', 'Other'];
 
 // Helper function to convert Excel date serial number to YYYY-MM-DD format

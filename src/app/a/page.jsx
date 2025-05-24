@@ -1,130 +1,148 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-
-const availableFeatures = [
-  "settings_access",
-  "dashboard_access",
-  "reports_access",
-  "user_management",
-  "analytics_view",
-]; // Add all possible features here
 
 export default function UserFeaturesManager() {
   const [users, setUsers] = useState([]);
+  const [userMap, setUserMap] = useState({});
   const [selectedUserName, setSelectedUserName] = useState("");
-  const [userFeaturesUpdates, setUserFeaturesUpdates] = useState({}); // { username: [features] }
-  const [loading, setLoading] = useState(false);
+  const [userAccess, setUserAccess] = useState({}); // { userName: { features, maxFeatures, roleIds } }
 
   useEffect(() => {
-    setLoading(true);
     axios
       .get(`${process.env.NEXT_PUBLIC_BACKEND_API}/permissions/user-features`, {
         withCredentials: true,
       })
       .then(({ data }) => {
         setUsers(data);
-        if (data.length > 0) {
-          setSelectedUserName(data[0].userName);
-          setUserFeaturesUpdates({
-            [data[0].userName]: data[0].features || [],
-          });
-        }
+
+        const map = {};
+        const accessMap = {};
+        data.forEach((u) => {
+          map[u.userName] = {
+            userId: u.userId,
+            roleIds: u.roleIds || [],
+            position: u.position,
+          };
+          accessMap[u.userName] = {
+            features: u.features || [],
+            maxFeatures: u.maxFeatures || [],
+            roleIds: u.roleIds || [],
+          };
+        });
+
+        setUserMap(map);
+        setUserAccess(accessMap);
+        if (data.length > 0) setSelectedUserName(data[0].userName);
       })
       .catch((err) => {
-        console.error("Failed to fetch users:", err);
-      })
-      .finally(() => setLoading(false));
+        console.error("Error fetching user features:", err);
+      });
   }, []);
 
-  const handleUserChange = (e) => {
-    const username = e.target.value;
-    setSelectedUserName(username);
-    const selectedUser = users.find((u) => u.userName === username);
-    setUserFeaturesUpdates((prev) => ({
-      ...prev,
-      [username]: selectedUser?.features || [],
-    }));
-  };
-
   const toggleFeature = (feature) => {
-    setUserFeaturesUpdates((prev) => {
-      const features = prev[selectedUserName] || [];
-      if (features.includes(feature)) {
-        // remove feature
-        return {
-          ...prev,
-          [selectedUserName]: features.filter((f) => f !== feature),
-        };
-      } else {
-        // add feature
-        return {
-          ...prev,
-          [selectedUserName]: [...features, feature],
-        };
+    setUserAccess((prev) => {
+      const user = prev[selectedUserName];
+      const hasFeature = user.features.includes(feature);
+      const hasMaxFeature = user.maxFeatures.includes(feature);
+
+      let newFeatures = [...user.features];
+      let newMaxFeatures = [...user.maxFeatures];
+
+      if (hasFeature) {
+        // Move from features → maxFeatures
+        newFeatures = newFeatures.filter((f) => f !== feature);
+        newMaxFeatures.push(feature);
+      } else if (hasMaxFeature) {
+        // Move from maxFeatures → features
+        newMaxFeatures = newMaxFeatures.filter((f) => f !== feature);
+        newFeatures.push(feature);
       }
+
+      return {
+        ...prev,
+        [selectedUserName]: {
+          ...user,
+          features: newFeatures,
+          maxFeatures: newMaxFeatures,
+        },
+      };
     });
   };
 
+  const getAllFeatures = () => {
+    const access = userAccess[selectedUserName];
+    if (!access) return [];
+    return Array.from(new Set([...access.features, ...access.maxFeatures]));
+  };
+
   const handleSave = async () => {
-    if (!selectedUserName) {
-      alert("Please select a user first");
+    const selectedUser = userMap[selectedUserName];
+    const access = userAccess[selectedUserName];
+
+    if (!selectedUser || !selectedUser.userId || !access?.roleIds.length) {
+      alert("User ID or Role IDs missing for selected user.");
       return;
     }
+
+    const roleAccessUpdates = access.roleIds.map((roleId) => ({
+      roleId,
+      features: access.features,
+      maxFeature: access.maxFeatures, // ✅ FIXED: Include maxFeature
+    }));
+
     try {
       await axios.put(
         `${process.env.NEXT_PUBLIC_BACKEND_API}/permissions/update-permissions`,
         {
-          userName: selectedUserName,
-          features: userFeaturesUpdates[selectedUserName] || [],
+          userId: selectedUser.userId,
+          roleAccessUpdates,
         },
         { withCredentials: true }
       );
-      alert("Features updated successfully");
-    } catch (error) {
-      console.error("Failed to update features:", error);
-      alert("Failed to update features");
+
+      alert("Access updated successfully.");
+    } catch (err) {
+      console.error("Error updating permissions:", err);
+      alert("Failed to update access.");
     }
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
-      <h2>User Features Manager</h2>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h2>Admin Feature Access Manager</h2>
 
-      {loading && <p>Loading users...</p>}
-
-      {!loading && users.length === 0 && <p>No users found.</p>}
-
-      {!loading && users.length > 0 && (
+      {users.length > 0 ? (
         <>
           <label>
             Select User:{" "}
-            <select value={selectedUserName} onChange={handleUserChange}>
+            <select
+              value={selectedUserName}
+              onChange={(e) => setSelectedUserName(e.target.value)}
+            >
               {users.map((user) => (
-                <option key={user.userName} value={user.userName}>
+                <option key={user.userId} value={user.userName}>
                   {user.userName} — {user.position}
                 </option>
               ))}
             </select>
           </label>
 
-          <h3 style={{ marginTop: 20 }}>
-            Features for <em>{selectedUserName}</em>
+          <h3 style={{ marginTop: "20px" }}>
+            Access for <strong>{selectedUserName}</strong>
           </h3>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "15px" }}>
-            {availableFeatures.map((feature) => {
-              const checked =
-                userFeaturesUpdates[selectedUserName]?.includes(feature) ||
-                false;
+            {getAllFeatures().map((feature) => {
+              const isChecked = userAccess[selectedUserName]?.features.includes(feature);
               return (
                 <label key={feature} style={{ cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={checked}
+                    checked={isChecked}
                     onChange={() => toggleFeature(feature)}
                   />{" "}
-                  {feature}
+                  {feature} {isChecked ? "(feature)" : "(maxFeature)"}
                 </label>
               );
             })}
@@ -133,18 +151,20 @@ export default function UserFeaturesManager() {
           <button
             onClick={handleSave}
             style={{
-              marginTop: 25,
+              marginTop: "25px",
               padding: "8px 16px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#28a745",
               color: "white",
               border: "none",
-              borderRadius: 4,
+              borderRadius: "4px",
               cursor: "pointer",
             }}
           >
             Save Changes
           </button>
         </>
+      ) : (
+        <p>Loading users...</p>
       )}
     </div>
   );
