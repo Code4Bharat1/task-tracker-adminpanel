@@ -22,6 +22,7 @@ import {
   FaSpinner,
   FaBell
 } from "react-icons/fa";
+import { useRouter } from 'next/navigation';
 
 // API Base URL - adjust according to your setup
 const API_BASE_URL = 'http://localhost:4110/api';
@@ -96,6 +97,7 @@ const Toast = ({ message, type = "success", show, onClose }) => (
 // Multi-Select Dropdown Component
 const MultiSelectDropdown = ({ options, selected, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
+  
 
   const toggleOption = (optionId) => {
     if (optionId === 'all') {
@@ -300,7 +302,10 @@ const CreatePost = ({ onPostCreated, onPreview, positions }) => {
   const [currentTag, setCurrentTag] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-
+const router = useRouter();
+const PostClick=(()=>{
+  router.push('/posthistory');
+})
   const fileInputRef = useRef(null);
 
   const POST_TEMPLATES = [
@@ -704,11 +709,11 @@ const CreatePost = ({ onPostCreated, onPreview, positions }) => {
             Save as Draft
           </button>
           <button
-            onClick={() => onPreview(getPreviewData())}
+            onClick={PostClick}
             className="w-full bg-gray-200 text-gray-800 py-3 px-6 rounded-lg hover:bg-gray-300 font-medium transition-colors flex items-center justify-center"
           >
             <FaEye className="mr-2" />
-            Preview Post
+            Post Historyb
           </button>
         </div>
       </div>
