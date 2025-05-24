@@ -22,9 +22,7 @@ export default function AssignTask() {
     status: "Open",
     tagMembers: [],
     attachmentRequired: "No",
-    recurring: false,
     taskDescription: "",
-    remark: ""
   });
 
   // Fetch users and admin data when component mounts
@@ -120,9 +118,7 @@ export default function AssignTask() {
         status: "Open",
         tagMembers: [],
         attachmentRequired: "No",
-        recurring: false,
         taskDescription: "",
-        remark: ""
       });
     } catch (error) {
       console.error("Error creating task:", error);
@@ -327,23 +323,7 @@ export default function AssignTask() {
                 </select>
               </div>
 
-              <div>
-                <label className="block mb-1 text-lg font-medium">Recurring</label>
-                <select
-                  name="recurring"
-                  value={formData.recurring}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      recurring: e.target.value === "true"
-                    }))
-                  }
-                  className="border border-gray-400 rounded px-3 py-2 shadow-[0px_2px_0px_rgba(0,0,0,0.2)] w-52"
-                >
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
+             
             </div>
 
             <div className="mb-6">
@@ -355,17 +335,6 @@ export default function AssignTask() {
                 onChange={handleInputChange}
                 className="border border-gray-400 rounded px-3 py-2 shadow-[0px_2px_0px_rgba(0,0,0,0.2)] w-full"
                 required
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block mb-1 font-medium">Remark</label>
-              <input
-                type="text"
-                name="remark"
-                value={formData.remark}
-                onChange={handleInputChange}
-                className="border border-gray-400 rounded px-3 py-2 shadow-[0px_2px_0px_rgba(0,0,0,0.2)] w-full"
               />
             </div>
 
