@@ -95,6 +95,7 @@ export default function CalendarPage() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isParticipantOpen, setIsParticipantOpen] = useState(false);
   const [remindBefore, setRemindBefore] = useState(15);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
 
   // Refs
   const dropdownRef = useRef(null);
@@ -111,19 +112,42 @@ export default function CalendarPage() {
   });
 
   // Participants list
-  const participants = [
-    "alice@example.com",
-    "bob@example.com",
-    "carol@example.com",
-    "dave@example.com",
-    "eve@example.com",
-    "frank@example.com",
-    "grace@example.com",
-    "heidi@example.com",
-    "user1@example.com",
-    "user2@example.com"
-  ];
 
+useEffect(() => {
+  const fetchParticipants = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/admin/email`,
+        {
+          credentials: "include",
+          method: "GET",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log(data)
+      
+      // Transform to array of { id, email, name }
+      const employees = data.data.map(employee => ({
+        id: employee.id.toString(),
+        email: employee.email,
+      }));
+
+      setParticipant(employees);
+
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+      // Optional: Add error state handling
+      toast.error("Failed to load participants");
+    }
+  };
+  
+  fetchParticipants();
+}, [calType]); // Add calType to dependencies if needed
   // Load persisted events from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -160,7 +184,7 @@ export default function CalendarPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
   // Handle escape key press to close modals
   useEffect(() => {
     const handleEscapeKey = (e) => {
@@ -172,7 +196,7 @@ export default function CalendarPage() {
         }
       }
     };
-    
+
     document.addEventListener('keydown', handleEscapeKey);
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
@@ -183,12 +207,12 @@ export default function CalendarPage() {
   useEffect(() => {
     // Fetch data initially
     fetchCalendarData();
-    
+
     // Set up interval for periodic refresh (every 2 minutes)
     const refreshInterval = setInterval(() => {
       fetchCalendarData(false); // Pass false to not show loading indicator on auto-refresh
     }, 120000); // 2 minutes
-    
+
     // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
   }, [currentDate]);
@@ -199,10 +223,10 @@ export default function CalendarPage() {
     const handleExternalChanges = () => {
       fetchCalendarData(false);
     };
-    
+
     // Set up event listener
     window.addEventListener('calendar-updated', handleExternalChanges);
-    
+
     // Clean up
     return () => {
       window.removeEventListener('calendar-updated', handleExternalChanges);
@@ -221,80 +245,34 @@ export default function CalendarPage() {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    // Event templates by category
-    const eventTemplates = {
-      "Daily Task": [
-        { title: "Code Review", description: "Review recent pull requests" },
-        { title: "Team Standup", description: "Daily team sync" },
-        { title: "Bug Fixes", description: "Address reported bugs" },
-        { title: "Documentation", description: "Update project documentation" },
-        { title: "Gym Session", description: "Weekly workout" }
-      ],
-      "Meeting": [
-        { title: "Project Planning", description: "Discuss upcoming milestones" },
-        { title: "Client Meeting", description: "Present progress update" },
-        { title: "Team Sync", description: "Weekly team coordination" },
-        { title: "1:1 with Manager", description: "Bi-weekly check-in" },
-        { title: "Budget Planning", description: "Quarterly budget review" }
-      ],
-      "Reminder": [
-        { title: "Doctor's Appointment", description: "Annual checkup" },
-        { title: "Bill Payment", description: "Monthly utilities payment" },
-        { title: "Birthday", description: "Team member's birthday" },
-        { title: "Subscription Renewal", description: "Renew software subscription" },
-        { title: "Follow-up", description: "Follow up on client request" }
-      ],
-      "Deadline": [
-        { title: "Project Submission", description: "Final project delivery" },
-        { title: "Client Proposal", description: "Submit proposal for review" },
-        { title: "Report Due", description: "Submit monthly report" },
-        { title: "Feature Release", description: "Deploy new features" },
-        { title: "Code Freeze", description: "Feature lock for testing" }
-      ],
-      "Leaves": [
-        { title: "Vacation", description: "Annual leave" },
-        { title: "Sick Leave", description: "Out of office" },
-        { title: "Personal Day", description: "Taking time off" },
-        { title: "Conference", description: "Attending industry event" },
-        { title: "Training", description: "Professional development course" }
-      ],
-      "Other": [
-        { title: "Networking Event", description: "Industry meetup" },
-        { title: "Webinar", description: "Educational online session" },
-        { title: "Team Lunch", description: "Monthly team bonding" },
-        { title: "System Maintenance", description: "Scheduled downtime" },
-        { title: "Brainstorming", description: "Creative idea generation" }
-      ]
-    };
-    
+
     // Generate some events for the month
     let events = [];
-    
+
     // Calculate how many events to generate (more realistic distribution)
     const totalEvents = Math.floor(Math.random() * 15) + 10; // 10-25 events per month
-    
+
     for (let i = 0; i < totalEvents; i++) {
       // Pick a random day in the month
       const day = Math.floor(Math.random() * daysInMonth) + 1;
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      
+
       // Pick a random category
       const categoryIndex = Math.floor(Math.random() * priorityOrder.length);
       const category = priorityOrder[categoryIndex];
-      
+
       // Pick a random template
       const templates = eventTemplates[category];
       const templateIndex = Math.floor(Math.random() * templates.length);
       const template = templates[templateIndex];
-      
+
       // Generate random time
       const hour = Math.floor(Math.random() * 12) + 8; // 8 AM to 8 PM
       const minute = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
       const ampm = hour < 12 ? "AM" : "PM";
       const hour12 = hour % 12 || 12;
       const time = `${hour12}:${String(minute).padStart(2, "0")} ${ampm}`;
-      
+
       // For meetings, generate start and end times
       let startTime, endTime;
       if (category === "Meeting") {
@@ -307,7 +285,7 @@ export default function CalendarPage() {
         const endAmPm = endHour < 12 ? "AM" : "PM";
         const endHour12 = endHour % 12 || 12;
         endTime = `${endHour12}:${String(endMinute).padStart(2, "0")} ${endAmPm}`;
-        
+
         // Random subset of participants (1-3)
         const numParticipants = Math.floor(Math.random() * 3) + 1;
         const meetingParticipants = [];
@@ -317,7 +295,7 @@ export default function CalendarPage() {
             meetingParticipants.push(participants[participantIndex]);
           }
         }
-        
+
         events.push({
           id: Date.now() + i,
           title: template.title,
@@ -344,7 +322,7 @@ export default function CalendarPage() {
         });
       }
     }
-    
+
     return events;
   };
 
@@ -353,29 +331,29 @@ export default function CalendarPage() {
     if (showLoader) {
       setIsLoading(true);
     }
-    
+
     try {
       // In a real application, you would fetch from the API:
       const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar/user/${calType}`, {
         credentials: "include",
         method: "GET",
       });
-      
+
       console.log(res);
 
       if (!res.ok) {
         throw new Error(`Failed to fetch calendar data: ${res.status}`);
       }
-      
+
       const data = await res.json();
       processCalendarData(data);
     } catch (err) {
       console.error("Error fetching calendar data:", err);
-      
+
       // Use dynamic mock data instead of static data
       const dynamicMockData = generateMockData();
       processCalendarData(dynamicMockData);
-      
+
       // Only show error toast in production
       if (process.env.NODE_ENV === 'production') {
         toast.error("Failed to load calendar data");
@@ -467,11 +445,11 @@ export default function CalendarPage() {
   // Generic event creation handler to reduce redundancy
   const createCalendarEntry = async (entryData) => {
     setIsSubmitting(true);
-    
+
     try {
       // IMPORTANT: Ensure calType is always included
       entryData.calType = calType;
-      
+
       // In a real application, you would post to the API:
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}/admin/calendar`, {
         method: 'POST',
@@ -498,7 +476,7 @@ export default function CalendarPage() {
     } catch (error) {
       console.error(`Error creating ${entryData.type.toLowerCase()}:`, error);
       toast.error(`Failed to create ${entryData.type.toLowerCase()}`);
-      
+
       // For development: Simulate successful creation with mock data
       simulateEntryCreation(entryData);
     } finally {
@@ -584,7 +562,7 @@ export default function CalendarPage() {
   const simulateEntryCreation = (entryData) => {
     // Generate a unique ID
     const newEntryId = Date.now();
-    
+
     // Create the event object - ensure it always has calType
     const newEvent = {
       id: newEntryId,
@@ -603,14 +581,14 @@ export default function CalendarPage() {
 
     // Update both state and trigger refresh
     const dateKey = formatDateKey(taskDate);
-    
+
     // Update local state for immediate feedback
     setEventDates(prev => {
       const updatedDates = {
         ...prev,
         [dateKey]: [...(prev[dateKey] || []), newEvent]
       };
-      
+
       // Store in localStorage for persistence during development
       if (typeof window !== 'undefined') {
         try {
@@ -619,7 +597,7 @@ export default function CalendarPage() {
           console.error('Could not save to localStorage:', e);
         }
       }
-      
+
       return updatedDates;
     });
 
@@ -635,7 +613,7 @@ export default function CalendarPage() {
         });
       }, 1500);
     }
-    
+
     if (entryData.type === "Event" && entryData.reminder) {
       const demoDelay = Math.min(entryData.remindBefore * 50, 10000); // Max 10 seconds
       setTimeout(() => {
@@ -651,7 +629,7 @@ export default function CalendarPage() {
       pauseOnHover: true,
       draggable: true,
     });
-    
+
     resetForm();
     setShowModal(false);
   };
@@ -675,17 +653,17 @@ export default function CalendarPage() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const endOffset = (7 - (firstDay + daysInMonth) % 7) % 7;
-  
+
   // Function to check for upcoming events and send notifications
   const checkUpcomingEvents = () => {
     const now = new Date();
     const today = formatDateKey(now);
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    
+
     // Get today's events
     const todayEvents = eventDates[today] || [];
-    
+
     // Check each event time
     todayEvents.forEach(event => {
       if (event.time) {
@@ -693,21 +671,21 @@ export default function CalendarPage() {
         const [hourStr, minuteStr] = timeStr.split(':');
         let hour = parseInt(hourStr);
         const minute = parseInt(minuteStr);
-        
+
         // Convert to 24-hour format
         if (ampm === 'PM' && hour < 12) hour += 12;
         if (ampm === 'AM' && hour === 12) hour = 0;
-        
+
         // Calculate minutes until event
         const eventMinutes = hour * 60 + minute;
         const currentMinutes = currentHour * 60 + currentMinute;
         const minutesUntilEvent = eventMinutes - currentMinutes;
-        
+
         // If event is coming up within 30 minutes and hasn't been notified
         if (minutesUntilEvent > 0 && minutesUntilEvent <= 30 && !event.notified) {
           // Mark as notified to prevent duplicate notifications
           event.notified = true;
-          
+
           // Show notification
           toast.info(`Upcoming in ${minutesUntilEvent} minutes: ${event.title}`, {
             autoClose: 5000
@@ -716,23 +694,23 @@ export default function CalendarPage() {
       }
     });
   };
-  
+
   // Set up periodic check for upcoming events
   useEffect(() => {
     // Check every 5 minutes
     const checkInterval = setInterval(checkUpcomingEvents, 300000);
-    
+
     // Do an initial check
     checkUpcomingEvents();
-    
+
     return () => clearInterval(checkInterval);
   }, [eventDates, todayKey]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
-      <ToastContainer 
-        position="top-center" 
-        autoClose={3000} 
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -813,7 +791,7 @@ export default function CalendarPage() {
               </div>
             </div>
           )}
-        
+
           {/* Calendar Header */}
           <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-100">
             <div className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -864,15 +842,15 @@ export default function CalendarPage() {
               // Base styling
               let bgClass = "bg-white";
               let dayClass = "text-gray-800";
-              
+
               if (isSunday) {
                 dayClass = "text-red-500";
               }
-              
+
               if (isToday) {
                 bgClass = "bg-blue-50";
               }
-              
+
               if (isHovered) {
                 bgClass = "bg-gray-50";
               }
@@ -943,7 +921,7 @@ export default function CalendarPage() {
                           </li>
                         ))}
                       </ul>
-                      
+
                       {/* Triangle pointer */}
                       <div className="absolute w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45 left-1/2 -bottom-1.5 -ml-1.5"></div>
                     </div>
@@ -975,14 +953,14 @@ export default function CalendarPage() {
 
       {/* Create Modal - More compact */}
       {showModal && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300" 
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300"
           onClick={() => {
             setShowModal(false);
             resetForm();
           }}
         >
-          <div 
+          <div
             ref={modalRef}
             className="bg-white w-full max-w-md rounded-xl shadow-2xl relative max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
@@ -1005,11 +983,10 @@ export default function CalendarPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3 px-3 font-medium transition-all duration-200 relative text-sm flex-1 ${
-                    activeTab === tab
+                  className={`py-3 px-3 font-medium transition-all duration-200 relative text-sm flex-1 ${activeTab === tab
                       ? "text-blue-600 bg-white"
                       : "text-gray-600 hover:text-gray-800"
-                  }`}
+                    }`}
                   disabled={isSubmitting}
                 >
                   {tab === "Meeting" ? "Meeting" : tab}
@@ -1074,9 +1051,8 @@ export default function CalendarPage() {
                                   setTaskTime(time);
                                   setIsTimeDropdownOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                  taskTime === time ? "bg-blue-100 text-blue-700" : ""
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${taskTime === time ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
                                 disabled={isSubmitting}
                               >
                                 {time}
@@ -1086,7 +1062,6 @@ export default function CalendarPage() {
                         )}
                       </div>
                     </div>
-
                     {/* Participant Dropdown for Task */}
                     <div className="relative time-dropdown">
                       <label className="text-xs text-gray-600 font-medium block mb-1">Participant (Optional):</label>
@@ -1096,8 +1071,10 @@ export default function CalendarPage() {
                           className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
                           disabled={isSubmitting}
                         >
-                          <span className={participant ? "text-gray-800" : "text-gray-500"}>
-                            {participant || "Select participant"}
+                          <span className={selectedParticipant ? "text-gray-800" : "text-gray-500"}>
+                            {selectedParticipant
+                              ? `${selectedParticipant.email}`
+                              : "Select participant"}
                           </span>
                           <FiChevronDown className={`transition-transform duration-200 ${isParticipantOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -1106,7 +1083,7 @@ export default function CalendarPage() {
                           <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
                             <button
                               onClick={() => {
-                                setParticipant("");
+                                setSelectedParticipant(null);
                                 setIsParticipantOpen(false);
                               }}
                               className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm text-gray-500"
@@ -1114,19 +1091,22 @@ export default function CalendarPage() {
                             >
                               None
                             </button>
-                            {participants.map((p, idx) => (
+                            {participant.map((user) => (
                               <button
-                                key={idx}
+                                key={user.id}
                                 onClick={() => {
-                                  setParticipant(p);
+                                  setSelectedParticipant({
+                                    id: user._id,
+                                    email: user.email,
+                                   
+                                  });
                                   setIsParticipantOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                  participant === p ? "bg-blue-100 text-blue-700" : ""
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${selectedParticipant?.id === user._id ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
                                 disabled={isSubmitting}
                               >
-                                {p}
+                                {user.email}
                               </button>
                             ))}
                           </div>
@@ -1159,9 +1139,8 @@ export default function CalendarPage() {
                       </button>
                       <button
                         onClick={handleTaskCreate}
-                        className={`px-4 py-2 ${
-                          isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        className={`px-4 py-2 ${isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                          } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
                         disabled={isSubmitting}
                       >
                         {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
@@ -1198,9 +1177,8 @@ export default function CalendarPage() {
                                   setSelectedCategory(category);
                                   setIsCategoryOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors text-sm ${
-                                  selectedCategory === category ? `${categoryTextColors[category]} bg-opacity-10 bg-blue-50 font-medium` : ""
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors text-sm ${selectedCategory === category ? `${categoryTextColors[category]} bg-opacity-10 bg-blue-50 font-medium` : ""
+                                  }`}
                                 disabled={isSubmitting}
                               >
                                 <div className="flex items-center gap-2">
@@ -1237,9 +1215,8 @@ export default function CalendarPage() {
                                   setStartTime(time);
                                   setIsStartTimeOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                  startTime === time ? "bg-blue-100 text-blue-700" : ""
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${startTime === time ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
                                 disabled={isSubmitting}
                               >
                                 {time}
@@ -1250,7 +1227,7 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    {/* Participant Dropdown for Event */}
+                   {/* Participant Dropdown for Task */}
                     <div className="relative time-dropdown">
                       <label className="text-xs text-gray-600 font-medium block mb-1">Participant (Optional):</label>
                       <div className="relative">
@@ -1259,8 +1236,10 @@ export default function CalendarPage() {
                           className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
                           disabled={isSubmitting}
                         >
-                          <span className={participant ? "text-gray-800" : "text-gray-500"}>
-                            {participant || "Select participant"}
+                          <span className={selectedParticipant ? "text-gray-800" : "text-gray-500"}>
+                            {selectedParticipant
+                              ? `${selectedParticipant.email}`
+                              : "Select participant"}
                           </span>
                           <FiChevronDown className={`transition-transform duration-200 ${isParticipantOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -1269,7 +1248,7 @@ export default function CalendarPage() {
                           <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
                             <button
                               onClick={() => {
-                                setParticipant("");
+                                setSelectedParticipant(null);
                                 setIsParticipantOpen(false);
                               }}
                               className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm text-gray-500"
@@ -1277,19 +1256,22 @@ export default function CalendarPage() {
                             >
                               None
                             </button>
-                            {participants.map((p, idx) => (
+                            {participant.map((user) => (
                               <button
-                                key={idx}
+                                key={user.id}
                                 onClick={() => {
-                                  setParticipant(p);
+                                  setSelectedParticipant({
+                                    id: user._id,
+                                    email: user.email,
+                                   
+                                  });
                                   setIsParticipantOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                  participant === p ? "bg-blue-100 text-blue-700" : ""
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${selectedParticipant?.id === user._id ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
                                 disabled={isSubmitting}
                               >
-                                {p}
+                                {user.email}
                               </button>
                             ))}
                           </div>
@@ -1337,9 +1319,8 @@ export default function CalendarPage() {
                       </button>
                       <button
                         onClick={handleEventCreate}
-                        className={`px-4 py-2 ${
-                          isSubmitting ? 'bg-gray-400' : `${categoryColors[selectedCategory]} ${categoryHoverColors[selectedCategory]}`
-                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        className={`px-4 py-2 ${isSubmitting ? 'bg-gray-400' : `${categoryColors[selectedCategory]} ${categoryHoverColors[selectedCategory]}`
+                          } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
                         disabled={isSubmitting}
                       >
                         {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
@@ -1377,9 +1358,8 @@ export default function CalendarPage() {
                                     setStartTime(time);
                                     setIsStartTimeOpen(false);
                                   }}
-                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                    startTime === time ? "bg-blue-100 text-blue-700" : ""
-                                  }`}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${startTime === time ? "bg-blue-100 text-blue-700" : ""
+                                    }`}
                                   disabled={isSubmitting}
                                 >
                                   {time}
@@ -1413,9 +1393,8 @@ export default function CalendarPage() {
                                     setEndTime(time);
                                     setIsEndTimeOpen(false);
                                   }}
-                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${
-                                    endTime === time ? "bg-blue-100 text-blue-700" : ""
-                                  }`}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${endTime === time ? "bg-blue-100 text-blue-700" : ""
+                                    }`}
                                   disabled={isSubmitting}
                                 >
                                   {time}
@@ -1427,24 +1406,57 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs text-gray-600 font-medium block mb-1">Add Participant:</label>
+                    {/* Participant Dropdown for Task */}
+                    <div className="relative time-dropdown">
+                      <label className="text-xs text-gray-600 font-medium block mb-1">Add Participant (Optional):</label>
                       <div className="relative">
-                        <select
-                          value={participant}
-                          onChange={(e) => setParticipant(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-gray-50 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer text-sm"
+                        <button
+                          onClick={() => setIsParticipantOpen(!isParticipantOpen)}
+                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-left flex items-center justify-between border border-gray-200 transition-colors text-sm"
                           disabled={isSubmitting}
                         >
-                          <option value="" disabled>Select Email Address</option>
-                          {participants.map((p, idx) => (
-                            <option key={idx} value={p}>{p}</option>
-                          ))}
-                        </select>
-                        <FiChevronDown className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 pointer-events-none" />
+                          <span className={selectedParticipant ? "text-gray-800" : "text-gray-500"}>
+                            {selectedParticipant
+                              ? `${selectedParticipant.email} `
+                              : "Select participant"}
+                          </span>
+                          <FiChevronDown className={`transition-transform duration-200 ${isParticipantOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isParticipantOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-32 overflow-y-auto border border-gray-200">
+                            <button
+                              onClick={() => {
+                                setSelectedParticipant(null);
+                                setIsParticipantOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm text-gray-500"
+                              disabled={isSubmitting}
+                            >
+                              None
+                            </button>
+                            {participant.map((user) => (
+                              <button
+                                key={user.id}
+                                onClick={() => {
+                                  setSelectedParticipant({
+                                    id: user._id,
+                                    email: user.email,
+                                   
+                                  });
+                                  setIsParticipantOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 text-sm ${selectedParticipant?.id === user._id ? "bg-blue-100 text-blue-700" : ""
+                                  }`}
+                                disabled={isSubmitting}
+                              >
+                                {user.email}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-
                     <div>
                       <label className="text-xs text-gray-600 font-medium block mb-1">Description:</label>
                       <textarea
@@ -1470,9 +1482,8 @@ export default function CalendarPage() {
                       </button>
                       <button
                         onClick={handleMeetingCreate}
-                        className={`px-4 py-2 ${
-                          isSubmitting ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'
-                        } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
+                        className={`px-4 py-2 ${isSubmitting ? 'bg-gray-400' : 'bg-red-500 hover:bg-red-600'
+                          } text-white rounded-lg transition font-medium flex items-center gap-2 text-sm`}
                         disabled={isSubmitting}
                       >
                         {isSubmitting && <FiRefreshCw className="animate-spin h-3 w-3" />}
